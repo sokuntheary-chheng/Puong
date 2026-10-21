@@ -5,15 +5,12 @@
 | Field | Value |
 |---|---|
 | **Project / Document** | Puong — shared family archive · Software Requirements Specification |
-| **Version / Date / Author** | 1.0 (draft for M0 review) · 21 October 2026 · sokuntheary-chheng |
+| **Version / Date / Author** | 1.0 · 21 October 2026 · sokuntheary-chheng |
 | **Standard** | ISO/IEC/IEEE 29148:2018 (successor to IEEE 830-1998) |
-| **Related** | `PROPOSAL.md` (M0) · `docs/api.md` (M2) · `docs/erd.md` (M2) |
-
-> `PROPOSAL.md` is the deliverable required by the course guideline (Appendix A). This SRS is the working specification from which the API contract, the ERD and the test plan are derived and checked.
 
 ## Table of contents
 
-1. Introduction · 2. Overall description · 3. Specific requirements · 4. Traceability matrix · 5. Appendices
+1. Introduction · 2. Overall description · 3. Specific requirements · 4. Traceability matrix · 5. Domain reference
 
 ---
 
@@ -29,7 +26,7 @@ A user creates one or more family trees and shares them with relatives; the memb
 
 **In scope:** authentication and role-based access control within a tree; tree management, membership, invitations and ownership transfer; people, relations and a generation-organised tree view; memories and photographs; search, filtering and pagination; a daily scheduled job; Docker Compose deployment with continuous integration.
 
-**Out of scope** (full list with reasons in `PROPOSAL.md`):
+**Out of scope:**
 
 | Excluded | Reason |
 |---|---|
@@ -55,7 +52,13 @@ A user creates one or more family trees and shares them with relatives; the memb
 
 ### 1.4 References
 
-`PROPOSAL.md` (source of the problem, roles, user stories and MVP scope) · `docs/api.md` and `docs/erd.md` (both derived from §3) · `MILESTONES.md` (milestone checklists and written design answers) · ISO/IEC/IEEE 29148:2018 and RFC 7519 (requirement process; JSON Web Token).
+| Reference | Relevance |
+|---|---|
+| ISO/IEC/IEEE 29148:2018 | Systems and software engineering — requirement engineering; the process and document structure followed here. |
+| RFC 7519 | JSON Web Token; the session token format used for authentication. |
+| RFC 9110 | HTTP Semantics; the status codes and methods used by the API. |
+| RFC 6749 | The OAuth 2.0 Authorization Framework; referenced for its bearer-token model only. |
+| OWASP ASVS | Application Security Verification Standard; the source of the security requirements in §3.5. |
 
 ### 1.5 Overview
 
@@ -91,7 +94,24 @@ Puong is self-contained and depends on no third-party service at run time. The A
 
 Seven functional groups, each corresponding to one requirement group in §3.2: **authentication and account**; **trees**; **membership and invitations** (inviting, accepting, declining, expiry, removal, ownership transfer); **people** (each person's record and a "still needs details" status); **relations** (linking two people with a type, under the rules that keep the lineage sound); **memories and photographs** (with per-memory privacy); **discovery** (search, filter, pagination, and the generation-column tree view).
 
-### 2.3 User characteristics
+### 2.3 User stories
+
+The ten stories below define the scope of the release. §4 traces each requirement group back to the stories it serves.
+
+| ID | Role | User story |
+|---|---|---|
+| US‑1 | Owner | As an Owner, I want to create a family tree and give it a name, so that we have one place for our family. |
+| US‑2 | Owner | As an Owner, I want to invite a relative by email and choose their role, so that the whole family can contribute. |
+| US‑3 | Member | As any member, I want to see the whole tree organised by generation, so that I can understand how everyone is connected. |
+| US‑4 | Contributor | As a Contributor, I want to add a person with their name and dates, so that the record grows. |
+| US‑5 | Contributor | As a Contributor, I want to link a new person to relatives already in the tree, so that I do not enter the same family twice. |
+| US‑6 | Contributor | As a Contributor, I want to attach a memory and a photograph to a person, so that the family's stories and pictures are kept together. |
+| US‑7 | Contributor | As a Contributor, I want to edit and delete only my own contributions, so that I can fix my mistakes without touching anyone else's. |
+| US‑8 | Owner | As an Owner, I want to see which profiles are still incomplete, so that the record gets finished over time. |
+| US‑9 | Member | As any member, I want to search for a person and filter the list, so that I can find anyone quickly. |
+| US‑10 | Owner | As an Owner, I want to nominate a successor who can take over the tree, so that the archive outlives the person who started it. |
+
+### 2.4 User characteristics
 
 | Role | Frequency | Expertise | What they do |
 |---|---|---|---|
@@ -101,7 +121,7 @@ Seven functional groups, each corresponding to one requirement group in §3.2: *
 
 There is no administrator role distinct from the Owner, and no role that can read a tree it does not belong to.
 
-### 2.4 Constraints
+### 2.5 Constraints
 
 **Business** — a person may belong to any number of trees, but a tree has exactly one owner at a time; the last active owner cannot be removed or demoted; a memory is private to its author or shared with the tree; a person may not become their own ancestor.
 
@@ -109,7 +129,7 @@ There is no administrator role distinct from the Owner, and no role that can rea
 
 **Delivery** — milestones at the end of weeks 3, 5, 7, 9, 12 and 14; code frozen at the end of week 15; the defence includes a live change made to the running application.
 
-### 2.5 Assumptions and dependencies
+### 2.6 Assumptions and dependencies
 
 - PostgreSQL 15 is available in the development environment and as a container image.
 - Browsers support ES2020, `localStorage` and the `File` API; photographs are uploaded as `multipart/form-data`.
@@ -233,7 +253,7 @@ There is no administrator role distinct from the Owner, and no role that can rea
 - **IR-4** A person shall reference exactly one tree; a memory shall reference exactly one person and exactly one author.
 - **IR-5** Deleting a tree shall cascade to its memberships, people, relations and memories; deleting a user shall be restricted, so that a tree must first be transferred or deleted.
 
-**Data model.** The authoritative diagram is `docs/erd.md`; the reasoning for each cardinality is set out in `PROPOSAL.md`.
+**Data model.** The six tables below are the whole persisted model. The cardinality of each relation is stated in the paragraph that follows the table.
 
 | Entity | Key attributes | Relation |
 |---|---|---|
@@ -290,35 +310,31 @@ There is no administrator role distinct from the Owner, and no role that can rea
 
 ## 4. Traceability matrix
 
-Each row groups the requirements of one functional area and states the user story it originates from, the component that implements it, and the test that proves it. "Story" refers to the numbered user stories in `PROPOSAL.md`. A requirement is *verified* only when the named test exists and passes in CI.
+Each row groups the requirements of one functional area and states the user story it originates from, the component that implements it, and the test that proves it. "Story" refers to the user stories in §2.3. A requirement is *verified* only when the named test exists and passes in CI.
 
 | Requirements | Story | Implementation | Verification | Status |
 |---|---|---|---|---|
 | FR-1.1 – FR-1.6 | — | `AuthModule`, `auth.service`, `JwtStrategy` | `auth.service.spec`, `auth.e2e-spec` | planned |
-| FR-2.1 – FR-2.5 | US-1 | `TreesModule`, `trees.controller` | `trees.service.spec`, `trees.e2e-spec` | planned |
-| FR-3.1 – FR-3.6 | US-2, US-10 | `MembershipsModule`, `TreeMembershipGuard` | `memberships.e2e-spec` | planned |
-| FR-4.1 – FR-4.7 | US-4, US-8 | `PersonsModule`, `persons.service` | `persons.service.spec`, `persons.e2e-spec` | planned |
-| FR-5.1 – FR-5.7 | US-5 | `RelationsModule`, `RelationService.assertNoAncestorCycle` | `relations.service.spec` | planned |
-| FR-6.1 – FR-6.7 | US-6, US-7 | `MemoriesModule`, `UploadInterceptor` | `memories.e2e-spec` | planned |
-| FR-7.1 – FR-7.4 | US-9 | `PersonsService.findAll` query builder | `person-query.spec`, `persons.e2e-spec` | planned |
-| FR-8.1 – FR-8.4 | US-3 | `TreeView.vue`, `useTreeLayout` composable | `tree-layout.spec` | planned |
-| FR-9.1 – FR-9.3 | US-10 | `TreesService.transferOwnership` | `trees.service.spec` | planned |
-| FR-10.1 – FR-10.2 | US-2 | `ScheduledTasksService`, `@Cron` | `scheduled-tasks.spec` | planned |
+| FR-2.1 – FR-2.5 | US‑1 | `TreesModule`, `trees.controller` | `trees.service.spec`, `trees.e2e-spec` | planned |
+| FR-3.1 – FR-3.6 | US‑2, US‑10 | `MembershipsModule`, `TreeMembershipGuard` | `memberships.e2e-spec` | planned |
+| FR-4.1 – FR-4.7 | US‑4, US‑8 | `PersonsModule`, `persons.service` | `persons.service.spec`, `persons.e2e-spec` | planned |
+| FR-5.1 – FR-5.7 | US‑5 | `RelationsModule`, `RelationService.assertNoAncestorCycle` | `relations.service.spec` | planned |
+| FR-6.1 – FR-6.7 | US‑6, US‑7 | `MemoriesModule`, `UploadInterceptor` | `memories.e2e-spec` | planned |
+| FR-7.1 – FR-7.4 | US‑9 | `PersonsService.findAll` query builder | `person-query.spec`, `persons.e2e-spec` | planned |
+| FR-8.1 – FR-8.4 | US‑3 | `TreeView.vue`, `useTreeLayout` composable | `tree-layout.spec` | planned |
+| FR-9.1 – FR-9.3 | US‑10 | `TreesService.transferOwnership` | `trees.service.spec` | planned |
+| FR-10.1 – FR-10.2 | US‑2 | `ScheduledTasksService`, `@Cron` | `scheduled-tasks.spec` | planned |
 | IF-1.1 – IF-1.7 | — | Global `HttpExceptionFilter`, `ValidationPipe` | `error-format.spec` | planned |
 
 The status column is updated at each milestone and is the basis of the features-versus-requirements assessment in the final product grade.
 
 ---
 
-## 5. Appendices
+## 5. Domain reference
 
-### 5.1 Supporting documents
+### 5.1 Test accounts
 
-`PROPOSAL.md` (M0 — problem, roles, user stories, MVP scope, entities, stretch feature) · `docs/api.md` (M2 — endpoint contract) · `docs/erd.md` (M2 — entity-relationship diagram) · `docs/wireframes/` (M1 — screens) · `MILESTONES.md` (checklists and written design answers) · `README.md` (M5 — setup, architecture, environment variables, test accounts).
-
-### 5.2 Seeded test accounts
-
-Provided by `prisma/seed.ts` and documented in the README.
+The application ships with three seeded accounts, one per role, so that the access rules of §3.2 can be exercised without setup.
 
 | Role | Email | Password | Access |
 |---|---|---|---|
@@ -328,7 +344,7 @@ Provided by `prisma/seed.ts` and documented in the README.
 
 The seed also creates a four-generation tree of about 22 people with shared and private memories and several deliberately incomplete profiles, so that the tree view, the filters and the "needs details" count are meaningful on a fresh start.
 
-### 5.3 Glossary of domain rules
+### 5.2 Glossary of domain rules
 
 1. **Generation** — the depth of a person in the lineage, computed by breadth-first traversal from those who have no parents.
 2. **Ancestor cycle** — a proposed `PARENT` relation that would place a person above themselves in the lineage. Rejected with `409`.

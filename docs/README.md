@@ -2,24 +2,34 @@
 
 Supporting documents for the Puong project.
 
-| File | Purpose | Due |
-|---|---|---|
-| `SRS.md` | Software Requirements Specification (ISO/IEC/IEEE 29148) | M0 working document |
-| `SRS.pdf` | Rendered A4 PDF of `SRS.md` — **9 pages** | — |
-| `print.css` | A4 print stylesheet used to render the PDF | — |
-| `api.md` | REST API contract: method, path, caller, body, success, errors | M2 |
-| `erd.md` | Entity-relationship diagram | M2 |
-| `wireframes/` | Screen wireframes | M1 |
+| File | Purpose |
+|---|---|
+| **`Puong-SRS.pdf`** | **Submission-ready Software Requirements Specification — 9 A4 pages. Fully self-contained: it references no other file in this repository and can be submitted or printed on its own.** |
+| `SRS.md` | The source of `Puong-SRS.pdf`, in Markdown. |
+| `print.css` | A4 print stylesheet used to render the PDF. |
 
-## Printing the SRS as A4
+## The submission PDF
 
-`SRS.md` is written to land on **9 A4 pages** with the stylesheet in `print.css`
-(11 pt body, 1.38 line height, 13 mm top / 13 mm side margins). Verified against four
-different render settings: 9 pages with `print.css`, 10 pages with Word's default
-margins and line height, 10 pages with pandoc's defaults, 9 pages with a compressed
-print layout.
+`Puong-SRS.pdf` is generated from `SRS.md` using `print.css`. It stands alone:
 
-### Option 1 — VS Code (easiest)
+- no references to `PROPOSAL.md`, `api.md`, `erd.md`, `MILESTONES.md` or `README.md`
+- the ten user stories are reproduced in §2.3, so §4's traceability matrix is self-explanatory
+- §1.4 lists only external standards (IEEE 29148, RFC 7519, RFC 9110, RFC 6749, OWASP ASVS)
+- §5 "Domain reference" holds the test accounts and the domain glossary, and nothing else
+
+Page count was measured by rendering with headless Chrome and reading the PDF page count,
+not estimated. Verified across four renderer settings:
+
+| Renderer settings | Pages |
+|---|---|
+| `print.css` (10.5 pt, 1.40 line height, 12 mm margins) | **9** |
+| Word default (11 pt, 1.5 line height, 25 mm margins) | 10 |
+| pandoc default (11 pt, 1.4 line height, 20 mm margins) | 10 |
+| Compressed print (10 pt, 1.3 line height, 12 mm margins) | 9 |
+
+## Regenerating the PDF
+
+### VS Code (easiest)
 
 Install the **Markdown PDF** extension, then add this front matter to `SRS.md`:
 
@@ -30,38 +40,29 @@ pdf:
 ---
 ```
 
-Or use **Markdown Preview Enhanced** → right-click the preview → *Export File* → *Chrome (Puppeteer)*, and paste `print.css` into *Include stylesheet*.
-
-### Option 2 — pandoc
+### pandoc
 
 ```bash
-pandoc docs/SRS.md -o docs/SRS.pdf \
+pip install weasyprint
+pandoc docs/SRS.md -o docs/Puong-SRS.pdf \
   --css=docs/print.css \
   --pdf-engine=weasyprint \
   --metadata title="Puong — Software Requirements Specification"
 ```
 
-`weasyprint` is a pure-Python renderer:
+### Google Docs or Word
 
-```bash
-pip install weasyprint
-```
-
-### Option 3 — Google Docs or Word
-
-1. Open `SRS.md` in a Markdown editor (or VS Code) and copy the rendered output.
+1. Open `SRS.md` in a Markdown editor and copy the rendered output.
 2. Paste into Google Docs / Word.
-3. Set **File → Page setup**: A4, margins **top 1.3 cm, bottom 1.4 cm, left/right 1.3 cm**.
-4. Set body text to **11 pt Segoe UI** (or Arial) with **1.38 line spacing**.
+3. Set **File → Page setup**: A4, margins **top 1.2 cm, bottom 1.3 cm, left/right 1.2 cm**.
+4. Set body text to **10.5 pt Segoe UI** (or Arial) with **1.40 line spacing**.
 
-> With Word's *default* 2.5 cm margins and 1.5 line spacing the document renders to
-> 10 pages — still inside the budget, but the settings above give the intended 9.
+> Word's *default* 2.5 cm margins and 1.5 line spacing render the document to 10 pages —
+> still inside the 8–10 page budget, but the settings above give the intended 9.
 
 ### Verifying the page count
 
 ```bash
-# macOS
-mdls -name kMDItemNumberOfPages docs/SRS.pdf
-# Linux
-pdfinfo docs/SRS.pdf | grep Pages
+pdfinfo docs/Puong-SRS.pdf | grep Pages     # Linux
+mdls -name kMDItemNumberOfPages docs/Puong-SRS.pdf   # macOS
 ```
