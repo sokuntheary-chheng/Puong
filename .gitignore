@@ -1,1 +1,20 @@
 wind/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+
+# Secrets — commit .env.example with placeholder values instead
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Uploaded photographs and other user files
+uploads/
