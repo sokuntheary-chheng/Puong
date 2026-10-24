@@ -122,7 +122,7 @@ on a person and `authorId` on a memory. — FR-3.6, FR-4.4, FR-4.5, FR-6.4, FR-6
 | Create a tree | ✓ | ✓ | ✓ | FR-2.1 |
 | Rename or delete a tree | ✓ | — | — | FR-2.4 |
 | Invite a member, change a role, remove a member | ✓ | — | — | FR-3.1, FR-3.5 |
-| Nominate a successor | ✓ | — | — | FR-9.1 |
+| Nominate a successor | ✓ | — | — | FR-9.1 — the nominee must be an active `CONTRIBUTOR` or `OWNER` |
 | Accept or decline a nomination | — | if nominated | — | FR-9.2 |
 | Add a person | ✓ | ✓ | — | FR-4.1 |
 | Edit or delete a person **they created** | ✓ | ✓ | — | FR-4.4, FR-4.5 |
@@ -132,7 +132,7 @@ on a person and `authorId` on a memory. — FR-3.6, FR-4.4, FR-4.5, FR-6.4, FR-6
 | Delete a relation | ✓ | ✓ | — | FR-5.5 — see §2.3 |
 | Add, edit or delete **their own** memory | ✓ | ✓ | — | FR-6.4 |
 | Edit **someone else's** memory | — | — | — | nobody, ever — see §2.2 |
-| Delete someone else's **shared** (`TREE`) memory | ✓ | — | — | needs FR-6.8 — see §2.2 |
+| Delete someone else's **shared** (`TREE`) memory | ✓ | — | — | FR-6.8 — see §2.2 |
 | Delete someone else's **private** memory | — | — | — | author only, even for an Owner — FR-6.6 |
 | View a shared memory | ✓ | ✓ | ✓ | FR-6.6 |
 | View a private memory | author only | author only | — | FR-6.6 |
@@ -165,7 +165,8 @@ FR-6.5 only ever discuss a contributor's *own* memories.
 shares and the Owner curates; a memory is signed by its author. That distinction is the
 reason the table above is not simply "Owner can do everything".
 
-**Needs one new requirement** — `FR-6.8` — to put the second row into the specification.
+**FR-6.8** now states this. It is the reason the second row of the matrix is not simply
+"an Owner can do everything".
 
 ### 2.3 Resolved: relations have no author
 
@@ -182,7 +183,7 @@ The must-have requirement *"a user cannot edit or delete another user's data"* i
 **persons** (`createdById`) and **memories** (`authorId`), where the record genuinely belongs
 to someone. Stating this out loud is what separates a deliberate design from an oversight.
 
-**Needs a clarifying sentence on FR-5.5.**
+**FR-5.5 now states this**, so the asymmetry reads as a decision rather than an oversight.
 
 ### 2.4 Resolved: a pending invitation does not open a tree
 
@@ -193,20 +194,18 @@ receives `404` for that tree. That is correct: an invitation is a proposal, not 
 membership is not `ACTIVE`. Pending invitations appear on the home page instead (FR-3.2) and
 the only action offered is accept or decline.
 
-### 2.5 Still open — one cell
+### 2.5 Resolved: who may be nominated as a successor
 
-**Can a `VIEWER` be nominated as a successor?** FR-9.1 says "one active member", which
-literally includes a Viewer, and FR-9.2 lets them accept — so a Viewer could be promoted
-straight to Owner without ever having contributed.
+FR-9.1 said "one active member", which literally included a `VIEWER`: a Viewer could be
+promoted straight to Owner without ever having used the interface, while FR-9.2 demotes the
+previous owner to `CONTRIBUTOR`.
 
-- **Leave it** — "the eldest relative who only ever looks" is a plausible succession story.
-- **Restrict it** — require the nomination to be an active `CONTRIBUTOR` or `OWNER`, so the
-  successor has used the editing interface before they inherit it.
+**Decision — restrict the nomination to an active `CONTRIBUTOR` or `OWNER`. FR-9.1 now says
+so.** The successor takes over the role, and the previous owner is demoted *into*
+`CONTRIBUTOR`, so the nominee should have held that role first.
 
-Not required for M1 either way; the wireframe for the succession screen does not depend on
-it. Recommend **restricting it**, because FR-9.2 also demotes the previous owner to
-`CONTRIBUTOR`, and a Viewer-turned-Owner has no experience of the role they are now
-responsible for.
+The succession screen is unaffected: it is rendered from the member list either way, and it
+is not part of M1.
 
 ### 2.6 How this table is used later
 

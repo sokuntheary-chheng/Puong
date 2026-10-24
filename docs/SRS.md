@@ -210,7 +210,7 @@ There is no administrator role distinct from the Owner, and no role that can rea
 - **FR-5.2** The system shall interpret a `PARENT` relation as meaning that the source person is the parent of the target person.
 - **FR-5.3** The system shall reject a relation between a person and themselves with `400 Bad Request`.
 - **FR-5.4** The system shall reject a `PARENT` relation that would make a person an ancestor of themselves, and shall return `409 Conflict` with a message explaining the cycle.
-- **FR-5.5** The system shall allow a contributor to delete a relation.
+- **FR-5.5** The system shall allow a contributor to delete a relation. A relation carries no author, so any member with write access may create or delete any relation in the tree; the unique triple (`fromId`, `toId`, `type`) prevents the same relation being created twice.
 - **FR-5.6** The system shall compute the generation of each person by breadth-first traversal of `PARENT` relations, starting from the people who have no parents, so that every parent is in an earlier generation than their child. A person who has no `PARENT` relation shall then adopt the highest generation among the people they are connected to by `SPOUSE`, `SIBLING` or `FRIEND`, repeating until no generation changes; a person with no `PARENT` relation and no connection to a placed person shall be in generation 0.
 - **FR-5.7** The system shall include in a person's detail response their parents, children, spouses and other relations.
 
@@ -223,6 +223,7 @@ There is no administrator role distinct from the Owner, and no role that can rea
 - **FR-6.5** The system shall return `403 Forbidden` when a contributor attempts to edit or delete a memory authored by another member.
 - **FR-6.6** The system shall show a memory with visibility `PRIVATE` only to its author, including to an owner, and shall show a memory with visibility `TREE` to every active member of the tree.
 - **FR-6.7** The system shall list the memories of a person in reverse chronological order of their occurred date, and shall not allow the recorded author of a memory to be changed afterwards.
+- **FR-6.8** The system shall allow an owner to delete a memory authored by another member only when that memory's visibility is `TREE`, and shall return `403 Forbidden` when anyone other than the author attempts to delete a memory marked `PRIVATE`. No member shall be allowed to edit a memory they did not author.
 
 **FR-7 Search, filter and pagination**
 
@@ -240,7 +241,7 @@ There is no administrator role distinct from the Owner, and no role that can rea
 
 **FR-9 Transfer of ownership**
 
-- **FR-9.1** The system shall allow an owner to nominate one active member as successor and shall present the pending nomination to that successor.
+- **FR-9.1** The system shall allow an owner to nominate one active member whose role is `CONTRIBUTOR` or `OWNER` as successor, and shall present the pending nomination to that successor.
 - **FR-9.2** The system shall allow the successor to accept or decline the nomination; on acceptance ownership shall move to the successor and the previous owner shall be demoted to `CONTRIBUTOR`.
 - **FR-9.3** The system shall record each transfer with its date and the identity of the previous owner.
 
@@ -325,7 +326,7 @@ Each row groups the requirements of one functional area and states the user stor
 | FR-4.1 – FR-4.6 | US‑4 | `PersonsModule`, `persons.service` | `persons.service.spec`, `persons.e2e-spec` | planned |
 | FR-4.7 *(nice to have)* | US‑8 *(nice to have)* | `PersonsService.countIncomplete` | `persons.service.spec` | optional |
 | FR-5.1 – FR-5.7 | US‑5 | `RelationsModule`, `RelationService.assertNoAncestorCycle` | `relations.service.spec` | planned |
-| FR-6.1 – FR-6.7 | US‑6, US‑7 | `MemoriesModule`, `UploadInterceptor` | `memories.e2e-spec` | planned |
+| FR-6.1 – FR-6.8 | US‑6, US‑7 | `MemoriesModule`, `UploadInterceptor` | `memories.e2e-spec` | planned |
 | FR-7.1 – FR-7.4 | US‑9 | `PersonsService.findAll` query builder | `person-query.spec`, `persons.e2e-spec` | planned |
 | FR-8.1 – FR-8.4 | US‑3 | `TreeView.vue`, `useTreeLayout` composable | `tree-layout.spec` | planned |
 | FR-9.1 – FR-9.3 | US‑10 | `TreesService.transferOwnership` | `trees.service.spec` | planned |
