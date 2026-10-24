@@ -45,6 +45,19 @@ export default tseslint.config(
     rules: {
       // The entry component is legitimately called App.vue.
       'vue/multi-word-component-names': 'off',
+
+      // create-vite ships main.ts without semicolons while the rest of the
+      // application uses them. Pick one, and make lint enforce it, rather
+      // than leaving the style to drift file by file.
+      semi: ['error', 'always'],
+      'vue/html-self-closing': [
+        'warn',
+        {
+          html: { void: 'always', normal: 'always', component: 'always' },
+          svg: 'always',
+          math: 'always',
+        },
+      ],
     },
   },
 );
