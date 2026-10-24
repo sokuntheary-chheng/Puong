@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { getMyRole, getTree, listPeople, listRelations } from '../services/mockApi';
 import { groupByGeneration } from '../services/generations';
 import type { Membership, Person, Relation, Tree } from '../mock/types';
 import { useSessionStore } from './session';
 import { createAsync, run } from './asyncState';
+import type { AsyncState } from './asyncState';
 
 /**
  * The tree that is currently open.
@@ -36,6 +37,46 @@ export const useTreeStore = defineStore('openTree', () => {
       run(role, () => getMyRole(treeId, session.currentUserId)),
     ]);
   }
+
+  /**
+   * One status for the whole tree.
+   *
+   * The four requests run in parallel, so they finish at slightly different
+   * times. A view that rendered on `tree` alone would draw the heading
+   * while the people were still arriving and the canvas would pop in
+   * behind it; this folds the four into the single state a view should
+   * wait on, preferring an error over a spinner so a failure is never
+   * hidden behind "Loading…".
+   */
+  const loadState = computed<AsyncState<null>>(() => {
+    const states = [tree, people, relations, role];
+
+    const failed = states.find((s) => s.status === 'error');
+    if (failed) {
+      return { status: 'error', data: null, error: failed.error };
+    }
+
+    const pending = states.some((s) => s.status === 'idle' || s.status === 'loading');
+    if (pending) {
+      return { status: 'loading', data: null, error: null };
+    }
+
+    return { status: 'ready', data: null, error: null };
+  });
+
+  /**
+   * The role is the one request here that belongs to the *viewer* rather
+   * than to the tree, so it is the one that has to be redone when the
+   * identity changes. The tree, its people and its relations do not: they
+   * are the same for everybody.
+   */
+  watch(
+    () => session.currentUserId,
+    async () => {
+      if (loadedTreeId.value === '') return;
+      await run(role, () => getMyRole(loadedTreeId.value, session.currentUserId));
+    },
+  );
 
   /* ---------------------------------------------------------------- */
   /* Derived from the loaded data                                     */
@@ -142,6 +183,7 @@ export const useTreeStore = defineStore('openTree', () => {
     role,
     loadedTreeId,
     open,
+    loadState,
     generations,
     personById,
     find,

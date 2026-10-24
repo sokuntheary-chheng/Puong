@@ -1,33 +1,55 @@
 <script setup lang="ts">
+import { computed, onMounted } from 'vue';
+import AsyncState from '../components/AsyncState.vue';
+import { useTreesStore } from '../stores/trees';
+
 /**
- * / — Home, the list of trees the signed-in member belongs to.
+ * / — Home, the trees the signed-in member belongs to (FR-1.2, FR-1.3).
  *
- * M1 item 3 wires the route; the list itself comes from the Pinia store in
- * item 4 (FR-1.2, FR-1.3). The two seeded trees are linked directly for now
- * so the routed application can be walked end to end before the store exists.
+ * The store is loaded once on mount. `fetch` is idempotent, so the retry
+ * offered by AsyncState simply runs it again.
  */
-const seededTrees = [
-  { id: 't1', name: 'Nguyễn family', note: 'Four generations' },
-  { id: 't2', name: 'Trần family', note: 'Nothing recorded yet' },
-];
+const store = useTreesStore();
+
+onMounted(() => {
+  void store.fetch();
+});
+
+const isEmpty = computed(() => store.trees.data.length === 0);
 </script>
 
 <template>
   <section>
     <h1>My trees</h1>
 
-    <ul class="trees">
-      <li
-        v-for="tree in seededTrees"
-        :key="tree.id"
-        class="trees__item"
-      >
-        <RouterLink :to="`/trees/${tree.id}`">
-          {{ tree.name }}
-        </RouterLink>
-        <span class="trees__note">{{ tree.note }}</span>
-      </li>
-    </ul>
+    <AsyncState
+      :state="store.trees"
+      :empty="isEmpty"
+      @retry="store.fetch()"
+    >
+      <template #empty>
+        <p>
+          You do not belong to a tree yet. Ask an owner to invite you, or
+          create one.
+        </p>
+      </template>
+
+      <ul class="trees">
+        <li
+          v-for="tree in store.trees.data"
+          :key="tree.id"
+          class="trees__item"
+        >
+          <RouterLink
+            class="trees__link"
+            :to="`/trees/${tree.id}`"
+          >
+            {{ tree.name }}
+          </RouterLink>
+          <span class="trees__note">{{ tree.description }}</span>
+        </li>
+      </ul>
+    </AsyncState>
   </section>
 </template>
 
@@ -40,12 +62,16 @@ const seededTrees = [
 }
 
 .trees__item {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.7rem 0.85rem;
   border: 1px solid var(--puong-rule, #d8d2c6);
   border-radius: 6px;
+  background: var(--puong-surface, #fffdf8);
+}
+
+.trees__link {
+  font-weight: 600;
 }
 
 .trees__note {

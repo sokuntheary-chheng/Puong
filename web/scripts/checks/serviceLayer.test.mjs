@@ -123,7 +123,7 @@ const people = await listPeople('t1');
 const relations = await listRelations('t1');
 
 const expected = {
-  0: ['p01', 'p02'],
+  0: ['p01', 'p02', 'p23'],
   1: ['p03', 'p04', 'p05', 'p06', 'p07', 'p08'],
   2: ['p09', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17'],
   3: ['p18', 'p19', 'p20', 'p21', 'p22'],
@@ -151,8 +151,12 @@ check(
   columns.map((c) => c.generation).join(','),
 );
 check(
-  columns.reduce((n, c) => n + c.people.length, 0) === 22,
+  columns.reduce((n, c) => n + c.people.length, 0) === 23,
   'every person appears in exactly one column',
+);
+check(
+  columns[0].people.some((p) => p.id === 'p23'),
+  'the unlinked person lands in generation 0, where the tree flags her as not linked yet',
 );
 check(
   relations

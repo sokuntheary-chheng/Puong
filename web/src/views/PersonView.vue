@@ -1,19 +1,61 @@
 <script setup lang="ts">
+import { computed, onMounted, watch } from 'vue';
+import AsyncState from '../components/AsyncState.vue';
 import { useStringParam } from '../composables/useRouteString';
+import { useMemoriesStore } from '../stores/memories';
+import { useSessionStore } from '../stores/session';
+import { useTreeStore } from '../stores/tree';
 
 /**
  * /trees/:treeId/people/:personId — the person page.
  *
- * The second parameterised route, and the place where a memory is attached:
- * the memory form is nested beneath this route rather than at
- * /memories/new, because a memory always belongs to a person and the person
- * has to be known before the form opens (docs/design.md §3).
+ * The tree is loaded only if it is not already open: arriving here directly
+ * from a shared link has to fetch everything, but walking from the tree view
+ * must not refetch what is already in memory.
  *
- * The profile itself, the derived completeness flag of FR-4.3 and the
- * memories list arrive with the store in item 4.
+ * FR-6.6 is enforced in the service, so a PRIVATE memory is simply absent
+ * for anyone but its author. The view never filters, and therefore cannot
+ * get the rule wrong.
  */
+const treeStore = useTreeStore();
+const memories = useMemoriesStore();
+const session = useSessionStore();
+
 const treeId = useStringParam('treeId');
 const personId = useStringParam('personId');
+
+const person = computed(() => treeStore.find(personId.value));
+const family = computed(() => treeStore.familyOf(personId.value));
+const noMemories = computed(() => memories.list.data.length === 0);
+
+async function load(): Promise<void> {
+  if (treeStore.loadedTreeId !== treeId.value) {
+    await treeStore.open(treeId.value);
+  }
+  await memories.fetchFor(treeId.value, personId.value);
+}
+
+onMounted(() => {
+  void load();
+});
+
+watch([treeId, personId], () => {
+  void load();
+});
+
+/* FR-6.6 — a PRIVATE memory belongs to its author, so who is asking changes
+   the answer. Switching identity has to refetch, or the view would keep
+   showing the previous viewer's memories. */
+watch(
+  () => session.currentUserId,
+  () => {
+    void memories.fetchFor(treeId.value, personId.value);
+  },
+);
+
+function formatDate(value: string | null): string {
+  return value === null ? 'not recorded' : value;
+}
 </script>
 
 <template>
@@ -24,27 +66,113 @@ const personId = useStringParam('personId');
       </RouterLink>
       /
       <RouterLink :to="{ name: 'tree', params: { treeId } }">
-        tree {{ treeId }}
+        {{ treeStore.tree.data?.name ?? treeId }}
       </RouterLink>
-      / {{ personId }}
+      / {{ person?.fullName ?? personId }}
     </p>
 
-    <h1>Person {{ personId }}</h1>
-
-    <dl class="params">
-      <dt>treeId (route param)</dt>
-      <dd><code>{{ treeId }}</code></dd>
-
-      <dt>personId (route param)</dt>
-      <dd><code>{{ personId }}</code></dd>
-    </dl>
-
-    <RouterLink
-      class="add-memory"
-      :to="{ name: 'memory-new', params: { treeId, personId } }"
+    <AsyncState
+      :state="treeStore.loadState"
+      :empty="person === undefined"
+      @retry="treeStore.open(treeId)"
     >
-      Add a memory about {{ personId }}
-    </RouterLink>
+      <template #empty>
+        <p>There is nobody with that id in this tree.</p>
+      </template>
+
+      <h1>{{ person?.fullName }}</h1>
+
+      <dl class="facts">
+        <dt>Nickname</dt>
+        <dd>{{ person?.nickname ?? 'not recorded' }}</dd>
+
+        <dt>Born</dt>
+        <dd>{{ formatDate(person?.birthDate ?? null) }}</dd>
+
+        <dt>Died</dt>
+        <dd>{{ person?.isLiving ? 'living' : formatDate(person?.deathDate ?? null) }}</dd>
+      </dl>
+
+      <p
+        v-if="person?.bio"
+        class="bio"
+      >
+        {{ person.bio }}
+      </p>
+
+      <div
+        v-for="group in family"
+        :key="group.label"
+        class="group"
+      >
+        <h2>{{ group.label }}</h2>
+        <p>
+          <template
+            v-for="(relative, i) in group.people"
+            :key="relative.id"
+          >
+            <span v-if="i > 0">, </span>
+            <RouterLink
+              :to="{ name: 'person', params: { treeId, personId: relative.id } }"
+            >
+              {{ relative.fullName }}
+            </RouterLink>
+          </template>
+        </p>
+      </div>
+
+      <hr />
+
+      <div class="memories__head">
+        <h2>Memories</h2>
+        <RouterLink
+          v-if="treeStore.canWrite"
+          :to="{ name: 'memory-new', params: { treeId, personId } }"
+        >
+          Add a memory
+        </RouterLink>
+        <p
+          v-else
+          class="memories__readonly"
+        >
+          Only an owner or a contributor can add a memory here.
+        </p>
+      </div>
+
+      <AsyncState
+        :state="memories.list"
+        :empty="noMemories"
+        @retry="memories.fetchFor(treeId, personId)"
+      >
+        <template #empty>
+          <p>No memories have been recorded for {{ person?.fullName }} yet.</p>
+        </template>
+
+        <ol class="memories">
+          <li
+            v-for="memory in memories.list.data"
+            :key="memory.id"
+            class="memory"
+          >
+            <div class="memory__title">
+              <h3>{{ memory.title }}</h3>
+              <span
+                class="memory__vis"
+                :class="`memory__vis--${memory.visibility.toLowerCase()}`"
+              >
+                {{ memory.visibility === 'PRIVATE' ? 'only me' : 'whole tree' }}
+              </span>
+            </div>
+            <p class="memory__meta">
+              {{ memory.happenedAt ?? 'no date recorded' }}
+            </p>
+            <p class="memory__body">
+              {{ memory.body }}
+            </p>
+          </li>
+        </ol>
+      </AsyncState>
+    </AsyncState>
   </section>
 </template>
 
@@ -54,20 +182,103 @@ const personId = useStringParam('personId');
   color: var(--puong-muted, #6b6257);
 }
 
-.params {
+.facts {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 0.25rem 1rem;
-  margin: 1.25rem 0;
+  gap: 0.2rem 1rem;
+  margin: 1rem 0;
   font-size: 0.9rem;
 }
 
-.params dt {
+.facts dt {
   color: var(--puong-muted, #6b6257);
 }
 
-.add-memory {
-  display: inline-block;
-  margin-top: 1rem;
+.facts dd {
+  margin: 0;
+}
+
+.bio {
+  max-width: 40rem;
+}
+
+.group h2 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--puong-muted, #6b6257);
+  margin: 1rem 0 0.15rem;
+}
+
+.group p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.memories__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.memories__head h2 {
+  margin-bottom: 0.75rem;
+}
+
+.memories__readonly {
+  font-size: 0.85rem;
+  color: var(--puong-muted, #6b6257);
+}
+
+.memories {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.memory {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--puong-rule, #d8d2c6);
+  border-radius: 6px;
+  background: var(--puong-surface, #fffdf8);
+}
+
+.memory__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.memory__title h3 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.memory__vis {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  color: var(--puong-muted, #6b6257);
+}
+
+.memory__vis--private {
+  color: var(--puong-danger, #a4322a);
+}
+
+.memory__meta {
+  margin: 0.15rem 0 0.4rem;
+  font-size: 0.8rem;
+  color: var(--puong-muted, #6b6257);
+}
+
+.memory__body {
+  margin: 0;
+  font-size: 0.92rem;
 }
 </style>

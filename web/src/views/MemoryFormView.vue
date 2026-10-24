@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
 import { useStringParam } from '../composables/useRouteString';
+import { useMemoriesStore } from '../stores/memories';
 import type { MemoryVisibility } from '../mock/types';
 import {
   ALLOWED_IMAGE_LABELS,
@@ -29,6 +30,7 @@ import type { FieldName } from '../utils/memoryValidation';
  */
 const treeId = useStringParam('treeId');
 const personId = useStringParam('personId');
+const memories = useMemoriesStore();
 
 const title = ref('');
 const body = ref('');
@@ -83,9 +85,10 @@ function clearPhoto(): void {
   touched.photo = true;
 }
 
-function onSubmit(): void {
+async function onSubmit(): Promise<void> {
   submitted.value = true;
   accepted.value = false;
+  memories.clearCreated();
 
   if (!isValid.value) {
     /* Focus the first field that is wrong, so the keyboard user is taken
@@ -98,9 +101,14 @@ function onSubmit(): void {
     return;
   }
 
-  /* M1 item 5 persists this through the Pinia store; until then, showing the
-     composed record is what proves the values survived validation intact. */
-  accepted.value = true;
+  accepted.value = await memories.create({
+    treeId: treeId.value,
+    personId: personId.value,
+    title: title.value,
+    body: body.value,
+    happenedAt: happenedAt.value,
+    visibility: visibility.value,
+  });
 }
 
 function resetForm(): void {
@@ -300,8 +308,11 @@ const acceptedSummary = computed(() => [
       </div>
 
       <div class="actions">
-        <button type="submit">
-          Save memory
+        <button
+          type="submit"
+          :disabled="memories.created.status === 'loading'"
+        >
+          {{ memories.created.status === 'loading' ? 'Saving…' : 'Save memory' }}
         </button>
         <button
           type="button"
@@ -320,6 +331,14 @@ const acceptedSummary = computed(() => [
         {{ Object.keys(errors).length }}
         field(s) need attention before this can be saved.
       </p>
+
+      <p
+        v-if="memories.created.status === 'error'"
+        class="form__summary"
+        role="alert"
+      >
+        The memory could not be saved: {{ memories.created.error }}
+      </p>
     </form>
 
     <div
@@ -327,10 +346,10 @@ const acceptedSummary = computed(() => [
       class="accepted"
       role="status"
     >
-      <h2>Validated</h2>
+      <h2>Saved</h2>
       <p>
-        Every rule passed. M1 item 5 puts this through the store and the
-        service layer; until then, this is the record that would be written.
+        Written as <code>{{ memories.created.data?.id }}</code> and placed at
+        the top of this person's memories.
       </p>
       <dl>
         <template
@@ -341,6 +360,12 @@ const acceptedSummary = computed(() => [
           <dd>{{ value }}</dd>
         </template>
       </dl>
+      <RouterLink
+        class="accepted__back"
+        :to="{ name: 'person', params: { treeId, personId } }"
+      >
+        Back to {{ personId }}
+      </RouterLink>
     </div>
   </section>
 </template>
@@ -463,5 +488,11 @@ const acceptedSummary = computed(() => [
 
 .accepted dd {
   margin: 0;
+}
+
+.accepted__back {
+  display: inline-block;
+  margin-top: 0.85rem;
+  font-size: 0.9rem;
 }
 </style>
