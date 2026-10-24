@@ -211,7 +211,7 @@ There is no administrator role distinct from the Owner, and no role that can rea
 - **FR-5.3** The system shall reject a relation between a person and themselves with `400 Bad Request`.
 - **FR-5.4** The system shall reject a `PARENT` relation that would make a person an ancestor of themselves, and shall return `409 Conflict` with a message explaining the cycle.
 - **FR-5.5** The system shall allow a contributor to delete a relation. A relation carries no author, so any member with write access may create or delete any relation in the tree; the unique triple (`fromId`, `toId`, `type`) prevents the same relation being created twice.
-- **FR-5.6** The system shall compute the generation of each person by breadth-first traversal of `PARENT` relations, starting from the people who have no parents, so that every parent is in an earlier generation than their child. A person who has no `PARENT` relation shall then adopt the highest generation among the people they are connected to by `SPOUSE`, `SIBLING` or `FRIEND`, repeating until no generation changes; a person with no `PARENT` relation and no connection to a placed person shall be in generation 0.
+- **FR-5.6** The system shall place a person who has no `PARENT` relation in generation 0, and any other person one generation below the **highest** generation among their parents, so that every parent is in an earlier generation than their child. A person who has no `PARENT` relation shall then adopt the highest generation among the people they are connected to by `SPOUSE`, `SIBLING` or `FRIEND`, repeating until no generation changes; a person with no `PARENT` relation and no connection to a placed person shall remain in generation 0.
 - **FR-5.7** The system shall include in a person's detail response their parents, children, spouses and other relations.
 
 **FR-6 Memories and photographs**
@@ -353,7 +353,7 @@ The seed also creates a four-generation tree of about 22 people with shared and 
 
 ### 5.2 Glossary of domain rules
 
-1. **Generation** — the depth of a person in the lineage, computed by breadth-first traversal from those who have no parents. A person who has no parents adopts the highest generation of the people they are linked to, and is 0 only when linked to nobody placed.
+1. **Generation** — one below the highest generation among a person's parents. A person with no parents recorded starts at 0 and then adopts the highest generation of the people they are linked to, remaining 0 only when linked to nobody placed.
 2. **Ancestor cycle** — a proposed `PARENT` relation that would place a person above themselves in the lineage. Rejected with `409`.
 3. **Profile completeness** — derived from the person's data and never stored: a profile is complete when the person has a full name, a birth date, and either a photograph or a biography.
 4. **Visibility** — `PRIVATE`, shown to the author alone, or `TREE`, shown to every active member.

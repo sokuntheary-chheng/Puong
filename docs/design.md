@@ -30,69 +30,81 @@ great-grandparent. Every tree contains these people, and the seeded tree contain
 
 ### 1.2 The rule
 
-1. `gen(p)` = breadth-first depth over `PARENT` relations, starting from the people who have
-   no parents. Those start at `0`.
-2. **Repeat until nothing changes:** a person who has **no** `PARENT` relation adopts the
-   **highest** generation among the people they are connected to by `SPOUSE`, `SIBLING` or
-   `FRIEND`.
-3. A person with no `PARENT` relation and no connection to a placed person is generation `0`.
+1. **Initialise.** A person with no `PARENT` relation starts at `0`; anyone with parents is
+   unplaced.
+2. **Repeat until neither step changes anything:**
+   - **(a) place** any unplaced person one generation below the **highest** of their parents;
+   - **(b) raise** any person who has no `PARENT` relation to the highest generation among the
+     people they are connected to by `SPOUSE`, `SIBLING` or `FRIEND`, when that is higher.
+3. Anyone still unplaced is `0`.
 
-Two properties make this rule safe to implement as written:
+Both steps only ever *raise* a generation, and generations are bounded by the depth of the
+lineage, so the loop terminates. Alternating them matters: (b) can raise an in-law after (a)
+has already placed her children, and those children must then be recomputed.
 
-- **It never lowers a generation.** Pass 1's result is authoritative for anyone who has
-  parents; pass 2 only raises people who have none.
-- **It terminates.** Generations only rise and are bounded by the depth of the lineage, so
-  the repeat loop converges — in at most two passes on the seeded data.
+*Why step 2(a) takes the **highest** parent and not the shortest path:* a parentless in-law
+is herself a root at generation 0. Breadth-first search would reach her children through her
+at depth 1 and stop there, putting a grandchild in the same column as his own father. One
+more than the *latest* parent gives the grandchild generation 2 — one below his father, whose
+own mother's contribution of 1 is simply the smaller of the two.
 
-*Why the highest and not the lowest:* a person married to someone in generation 2 who is also
-a friend of the founder must not appear above their own spouse.
+*Why step 2(b) takes the **highest** connection:* a person married to someone in generation 2
+who is also a friend of the founder must not appear above their own spouse.
 
 ### 1.3 Pseudocode
 
 ```text
 function computeGenerations(people, relations):
-    parentEdges = relations where type == PARENT
-    children    = group parentEdges by fromId
+    parentsByChild = PARENT relations grouped by toId
+    linksByPerson  = SPOUSE | SIBLING | FRIEND relations grouped by either end
 
-    # pass 1 — breadth-first over parent edges
-    for p in people with no parentEdges: gen[p] = 0
-    queue = people with no parentEdges
-    while queue not empty:
-        p = pop(queue)
-        for c in children[p] where gen[c] is undefined:
-            gen[c] = gen[p] + 1
-            queue.push(c)
+    for p in people:
+        gen[p] = parentsByChild[p] ? undefined : 0      # step 1
 
-    # pass 2 — adopt, until stable
-    changed = true
-    while changed:
+    repeat:
         changed = false
-        for p in people with no parentEdges:
-            placed = [ gen[q] for q connected to p by SPOUSE | SIBLING | FRIEND
-                       where gen[q] is defined ]
+
+        # step 2(a) — one below the LATEST parent, not the shortest path
+        for p where gen[p] is undefined:
+            ps = parentsByChild[p]
+            if every q in ps has gen[q] defined:
+                gen[p] = 1 + max(gen[q] for q in ps)
+                changed = true
+
+        # step 2(b) — a parentless person catches up with the people they are linked to
+        for p with no PARENT relation:
+            placed = [ gen[q] for q in linksByPerson[p] where gen[q] is defined ]
             if placed and max(placed) > gen[p]:
                 gen[p] = max(placed)
                 changed = true
 
-    # pass 3 — defensive; unreachable while FR-5.4 rejects ancestor cycles
-    for p where gen[p] is undefined: gen[p] = 0
+    until changed == false
+
+    for p where gen[p] is undefined: gen[p] = 0          # step 3, defensive
     return gen
 ```
+
+Step 2(a) needs *every* parent placed before it fires, which is what makes it a loop rather
+than a single pass: with two parentless parents the first iteration places neither child,
+and the second places both.
 
 ### 1.4 Worked examples
 
 | Case | Generation | Why |
 |---|---|---|
 | Founder — no parents, no links | `0` | Oldest column. Correct. |
+| A child whose **father** has parents recorded and whose **mother** is a parentless in-law | `2` | The in-law is a root at `0`, so a shortest-path search would give `1` and place the child **beside their own father**. One more than the *latest* parent gives `2`. |
 | In-law married to a generation-2 person, no parents recorded | `2` | Adopts the spouse's generation; sits beside their spouse. |
 | Same person, also a friend of the generation-0 founder | `2` | Takes the **highest** of the two, so never above their spouse. |
-| Anyone whose parents are recorded | BFS depth | Unaffected by pass 2. |
+| Anyone whose parents are recorded | one more than their latest parent | Unaffected by pass 2. |
 | Two parentless siblings, one married into a generation-2 branch | both `2` | Pass 2 repeats, so the sibling link carries it to the other. |
 | A person created but not yet linked (story 4, before story 5) | `0` | Appears in column 1 and is flagged **not linked yet**, prompting the link. |
 
 ### 1.5 What this changes in the specification
 
-- **FR-5.6** loses "every unrelated person in generation 0" and states the adoption rule.
+- **FR-5.6** loses "every unrelated person in generation 0", and replaces breadth-first depth
+  with "one below the **highest** generation among their parents" — the shortest-path reading
+  places a child of a parentless in-law beside their own father (see §1.2).
 - **Glossary rule 1 (Generation)** states the same rule in one line.
 
 Nothing else in `docs/SRS.md` describes generation placement.
@@ -104,9 +116,13 @@ These are the unit tests for `relations.service`:
 1. A parentless spouse of a generation-2 person is generation 2.
 2. A parentless person linked to generations 1 and 3 takes 3.
 3. Two parentless siblings linked to each other and to a placed branch both take the branch.
-4. A person with recorded parents keeps their BFS depth even when linked to a deeper person.
-5. An unlinked person is generation 0.
-6. The loop terminates on a chain of five parentless people attached at the far end.
+4. **A child with two parents, only one of whom has parents recorded, is one below the parent
+   who does — never beside them.** This is the case a first-touch breadth-first search gets
+   wrong, and the reason pass 1 takes the maximum.
+5. A person with recorded parents keeps the generation derived from those parents even when
+   linked to a deeper person.
+6. An unlinked parentless person is generation 0.
+7. The loop terminates on a chain of five parentless people attached at the far end.
 
 ---
 
