@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 740" width="960" height="740">
+<title>Wireframe — family tree canvas (/trees/:treeId)</title>
+<rect width="960" height="740" fill="#ffffff"/><rect x="0" y="0" width="960" height="30" fill="#efece5"/><rect x="16" y="7" width="620" height="17" rx="8" fill="#ffffff" stroke="#cfc9bd"/><text x="26" y="20" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#7a736a" font-weight="400" text-anchor="start">puong.dev/trees/t1?person=p04</text><rect x="0" y="30" width="960" height="44" fill="#faf8f3"/><rect x="0" y="700" width="960" height="40" fill="#faf8f3"/><line x1="0" y1="74" x2="960" y2="74" stroke="#cfc9bd"/><line x1="0" y1="700" x2="960" y2="700" stroke="#cfc9bd"/><text x="24" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" fill="#2f2a24" font-weight="700" text-anchor="start">Puong</text><text x="620" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#2f2a24" font-weight="700" text-anchor="start">My trees</text><text x="706" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#2f2a24" font-weight="400" text-anchor="start">Log in</text><text x="936" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#7a736a" font-weight="400" text-anchor="end">Sokuntheary Chheng · owner</text><text x="24" y="725" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" fill="#7a736a" font-weight="400" text-anchor="start">M1 demo controls ▸   signed-in-as switcher · arm a one-shot failure · reset the data</text>
+<text x="24" y="100" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#7a736a" font-weight="400" text-anchor="start">My trees / Nguyễn family</text>
+<text x="24" y="136" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" fill="#2f2a24" font-weight="700" text-anchor="start">Nguyễn family</text>
+<text x="936" y="134" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#7a736a" font-weight="400" text-anchor="end">You are owner here</text>
+<rect x="24" y="156" width="912" height="296" rx="6" fill="#ffffff" stroke="#cfc9bd"/>
+<text x="44" y="184" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="600" text-anchor="start">GENERATION 1</text>
+<rect x="44" y="196" width="200" height="50" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="56" y="215" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Nguyễn Văn An</text>
+<text x="56" y="232" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1935 – 2010</text>
+<rect x="44" y="254" width="200" height="50" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="56" y="273" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Trần Thị Bình</text>
+<text x="56" y="290" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1938 –</text>
+<rect x="44" y="312" width="200" height="64" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="56" y="331" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Hoàng Thị Bé</text>
+<text x="56" y="348" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1959 –</text>
+<text x="56" y="366" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#a4322a" font-weight="400" font-style="italic" text-anchor="start">not linked yet</text>
+<text x="272" y="184" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="600" text-anchor="start">GENERATION 2</text>
+<rect x="272" y="196" width="200" height="50" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="284" y="215" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Nguyễn Văn Cường</text>
+<text x="284" y="232" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1960 –</text>
+<rect x="272" y="254" width="200" height="50" rx="6" fill="#ffffff" stroke="#2f5d8a" stroke-width="2"/>
+<text x="284" y="273" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Lê Thị Cúc</text>
+<text x="284" y="290" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1962 –</text>
+<rect x="272" y="312" width="200" height="50" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="284" y="331" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Nguyễn Thị Hạnh</text>
+<text x="284" y="348" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1963 –</text>
+<text x="284" y="396" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#7a736a" font-weight="400" text-anchor="start">… 3 more</text>
+<text x="500" y="184" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="600" text-anchor="start">GENERATION 3</text>
+<rect x="500" y="196" width="200" height="50" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="512" y="215" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Trần Văn Dũng</text>
+<text x="512" y="232" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1961 –</text>
+<rect x="500" y="254" width="200" height="50" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="512" y="273" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Nguyễn Văn Hải</text>
+<text x="512" y="290" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1967 – 2019</text>
+<rect x="500" y="312" width="200" height="50" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="512" y="331" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Phạm Thị Oanh</text>
+<text x="512" y="348" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1969 –</text>
+<text x="512" y="396" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#7a736a" font-weight="400" text-anchor="start">… 6 more</text>
+<text x="728" y="184" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="600" text-anchor="start">GENERATION 4</text>
+<rect x="728" y="196" width="200" height="50" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="740" y="215" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Nguyễn Minh Khoa</text>
+<text x="740" y="232" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1988 –</text>
+<rect x="728" y="254" width="200" height="50" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="740" y="273" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Trần Bảo Long</text>
+<text x="740" y="290" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1991 –</text>
+<rect x="728" y="312" width="200" height="50" rx="6" fill="#ffffff" stroke="#cfc9bd" stroke-width="1"/>
+<text x="740" y="331" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="600" text-anchor="start">Lê Thu Hà</text>
+<text x="740" y="348" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">1994 –</text>
+<text x="740" y="396" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#7a736a" font-weight="400" text-anchor="start">… 2 more</text>
+<rect x="24" y="474" width="912" height="196" rx="6" fill="#faf8f3" stroke="#cfc9bd"/>
+<rect x="24" y="474" width="4" height="196" fill="#2f5d8a"/>
+<text x="44" y="506" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#2f2a24" font-weight="700" text-anchor="start">Lê Thị Cúc</text>
+<text x="44" y="528" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#7a736a" font-weight="400" text-anchor="start">Cúc · born 1962 in Cần Thơ</text>
+<text x="44" y="560" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="600" text-anchor="start">SPOUSE</text>
+<text x="44" y="580" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#2f5d8a" font-weight="400" text-anchor="start">Nguyễn Văn Cường</text>
+<text x="260" y="560" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="600" text-anchor="start">CHILDREN</text>
+<text x="260" y="580" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#2f5d8a" font-weight="400" text-anchor="start">Lê Nhật Nam</text>
+<text x="44" y="616" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="600" text-anchor="start">PARENTS</text>
+<text x="44" y="636" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#7a736a" font-weight="400" font-style="italic" text-anchor="start">not recorded in this tree</text>
+<text x="936" y="646" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#2f5d8a" font-weight="600" text-anchor="end">Open Lê Thị Cúc’s page →</text>
+<g><circle cx="204" cy="15" r="9" fill="#2f5d8a"/><text x="204" y="18.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">1</text></g>
+<g><circle cx="300" cy="15" r="9" fill="#2f5d8a"/><text x="300" y="18.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">2</text></g>
+<g><circle cx="152" cy="180" r="9" fill="#2f5d8a"/><text x="152" y="183.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">3</text></g>
+<g><circle cx="482" cy="274" r="9" fill="#2f5d8a"/><text x="482" y="277.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">4</text></g>
+<g><circle cx="252" cy="372" r="9" fill="#2f5d8a"/><text x="252" y="375.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">5</text></g>
+<g><circle cx="798" cy="130" r="9" fill="#2f5d8a"/><text x="798" y="133.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">6</text></g>
+<g><circle cx="742" cy="642" r="9" fill="#2f5d8a"/><text x="742" y="645.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">7</text></g>
+</svg>

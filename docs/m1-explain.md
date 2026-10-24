@@ -19,17 +19,19 @@ shareable as a URL. Confusing the route with the store is the most common mistak
 
 | State | Where | Why |
 |---|---|---|
-| Current user and session | **store** (`useAuthStore`) | Every screen needs it; it survives navigation and is restored from the token on reload. |
-| The list of my trees | **store** (`useTreeStore`) | Shown on the home page and in the navigation on every other screen. |
-| The active tree, its members and **my role in it** | **store** (`useTreeStore`) | The tree view, person page and search all need it, and every *can I do this* check reads it. |
-| People of the active tree, normalised by id | **store** (`usePeopleStore`) | The same 22 people appear on the tree view, the person page and the search results. Fetching and holding them three times would give three copies that can disagree. |
+| Current user and identity | **store** (`useSessionStore`) | Every screen needs it and it survives navigation. It must not be settable from a URL, and M3 replaces `currentUserId` with a real session restored from the token on reload. |
+| The list of my trees | **store** (`useTreesStore`) | Shown on the home page; it also has to be refetched when the identity changes, because a list of one member's trees is wrong for the next one. |
+| The active tree, its people, its relations and **my role in it** | **store** (`useTreeStore`, the `openTree` store) | The tree view, person page and search all need it, and every *can I do this* check reads the role. The four requests are issued together and folded into one `loadState`, so a view waits on one thing rather than four. |
+| The people of the active tree, and the generations derived from them | **store** (`useTreeStore`) | The same 23 people appear on the tree view, the person page and the search results. The generation placement is derived once here rather than recomputed per screen, so the three views can never disagree about where somebody sits. |
+| The memories of the person being viewed | **store** (`useMemoriesStore`) | The person page lists them and the form appends to them — one copy, or writing a memory would not show up until a reload. It refetches on identity change because FR-6.6's answer depends on who is asking. |
+| Search results | **store** (`useSearchStore`) | The *result* has to be fetched and held while the page changes. The query that produced it does **not** live here — see the route row. |
 | Login form: email, password, field errors | **component** | Belongs to the login form. If it lived in the store it would still be there after a successful login, and after logout. |
 | Memory form: title, body, date, visibility, errors, "is this form dirty" | **component** | A draft for person A must not appear when the form is opened for person B. Component state is recreated on mount, so the bug cannot happen. |
 | "Confirm delete" dialog open or closed | **component** | Pure presentation of one widget; nothing else cares. |
 | Which tab is showing on the person page | **component** | Dies with the page, as it should. |
 | Which person is hovered in the tree | **component** | Cosmetic and transient. |
-| The selected person on the tree view (`?person=…`) | **route** | You must be able to refresh, use the back button and send someone a link to that person. In the store, a refresh would silently clear it. |
-| The search query (`?q=…`) | **route** | Same reason — a search result page is useless if the link does not reproduce the search. |
+| The selected person on the tree view (`?person=…`) | **route** | You must be able to refresh, use the back button and send someone a link to that person. In the store, a refresh would silently clear it. Selecting a card is therefore a route push, never a store commit — the two must not be able to disagree. |
+| The search query (`?q=…`) and its page (`?page=…`) | **route** | Same reason — a search result page is useless if the link does not reproduce the search, down to the page you were on. |
 
 ## Why — the reasoning, not just the list
 
@@ -70,13 +72,22 @@ was needed. That is the whole argument: the correct choice is also the one with 
 
 ## Store shape
 
-One store per bounded context, not one large store:
+One store per bounded context, not one large store — and each is named for what it holds,
+which is how the file list reads:
 
 ```text
-useAuthStore    → user, token, login(), logout()
-useTreeStore    → trees, activeTree, members, myRole, fetchTrees(), selectTree()
-usePeopleStore  → peopleById, peopleIds, generationOf(), fetchPeople(), addPerson()
+useSessionStore  ('session')   → currentUserId, currentUser, fetchUsers(), switchTo()
+useTreesStore    ('trees')     → trees (AsyncState), fetch(); watches the session
+useTreeStore     ('openTree')  → tree, people, relations, role, loadState,
+                                 generations, canWrite, familyOf(), open(treeId)
+useMemoriesStore ('memories')  → list, created, fetchFor(), create()
+useSearchStore   ('search')    → result, search(), reset(); the query stays in the URL
 ```
+
+Every asynchronous value in every store has the same four-state shape — `idle`, `loading`,
+`ready`, `error` — produced by `stores/asyncState.ts`, which is why `AsyncState.vue` can
+render all five screens' loading, empty and error states from one component instead of
+each screen reinventing them.
 
 A store is imported by the components that need it; components never reach into each other's
 state, and no component owns a copy of data another screen also displays.

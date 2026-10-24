@@ -250,6 +250,10 @@ Six screens, six routes — two with a route parameter.
 The M1 checklist requires **at least four routes including one detail page with a route
 parameter**; six routes with two parameterised detail pages satisfies it with room to spare.
 
+The wireframes for these six screens are `docs/wireframes.md`, generated from this very
+table by `docs/wireframes/build.mjs` — so a route added here is a sheet added there, and
+neither can describe a screen the other does not have.
+
 Two rules follow from this table:
 
 - **Anything that must survive a refresh or be shareable as a URL belongs in the route.**
