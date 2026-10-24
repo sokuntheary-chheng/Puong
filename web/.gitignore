@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Bundled output of scripts/check-modules.mjs. Generated, and rebuildable
+# from the sources; committed test scripts, uncommitted bundles.
+.checks
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

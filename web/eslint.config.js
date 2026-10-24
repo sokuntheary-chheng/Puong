@@ -5,7 +5,15 @@ import pluginVue from 'eslint-plugin-vue';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      /* Bundles produced by scripts/check-modules.mjs. They are generated
+         output, and linting them would report errors the sources do not
+         have — `.gitignore` does not reach ESLint. */
+      '.checks/**',
+    ],
   },
 
   js.configs.recommended,

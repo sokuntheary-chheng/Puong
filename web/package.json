@@ -10,9 +10,12 @@
     "typecheck": "vue-tsc -b",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "check:seed": "node scripts/check-generations.mjs"
+    "check": "npm run check:seed && npm run check:modules",
+    "check:seed": "node scripts/check-generations.mjs",
+    "check:modules": "node scripts/check-modules.mjs"
   },
   "dependencies": {
+    "pinia": "^4.1.0",
     "vue": "^3.5.44",
     "vue-router": "^5.4.0"
   },
