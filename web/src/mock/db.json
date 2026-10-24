@@ -1,0 +1,133 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "email": "owner@puong.dev",
+      "passwordHash": "PLACEHOLDER-not-a-real-hash-m3-will-bcrypt-this",
+      "displayName": "Sokuntheary Chheng",
+      "createdAt": "2026-09-01T08:00:00.000Z"
+    },
+    {
+      "id": "u2",
+      "email": "contributor@puong.dev",
+      "passwordHash": "PLACEHOLDER-not-a-real-hash-m3-will-bcrypt-this",
+      "displayName": "Sreypov Chheng",
+      "createdAt": "2026-09-02T08:00:00.000Z"
+    },
+    {
+      "id": "u3",
+      "email": "viewer@puong.dev",
+      "passwordHash": "PLACEHOLDER-not-a-real-hash-m3-will-bcrypt-this",
+      "displayName": "Vannak Chheng",
+      "createdAt": "2026-09-03T08:00:00.000Z"
+    }
+  ],
+
+  "trees": [
+    {
+      "id": "t1",
+      "name": "Nguyễn family",
+      "description": "Four generations of the Nguyễn family, from An and Bình in 1935 to the children born after 2010.",
+      "coverPhotoUrl": null,
+      "ownerId": "u1",
+      "successorId": null,
+      "createdAt": "2026-09-01T08:30:00.000Z"
+    },
+    {
+      "id": "t2",
+      "name": "Trần family",
+      "description": "The Trần branch. Nothing recorded yet — deliberately empty, so that the empty state of FR-8.4 can be seen.",
+      "coverPhotoUrl": null,
+      "ownerId": "u1",
+      "successorId": null,
+      "createdAt": "2026-09-05T08:30:00.000Z"
+    }
+  ],
+
+  "memberships": [
+    { "id": "mb1", "treeId": "t1", "userId": "u1", "role": "OWNER", "status": "ACTIVE", "invitedAt": null, "acceptedAt": "2026-09-01T08:30:00.000Z" },
+    { "id": "mb2", "treeId": "t1", "userId": "u2", "role": "CONTRIBUTOR", "status": "ACTIVE", "invitedAt": "2026-09-02T09:00:00.000Z", "acceptedAt": "2026-09-02T10:00:00.000Z" },
+    { "id": "mb3", "treeId": "t1", "userId": "u3", "role": "VIEWER", "status": "ACTIVE", "invitedAt": "2026-09-03T09:00:00.000Z", "acceptedAt": "2026-09-03T10:00:00.000Z" },
+    { "id": "mb4", "treeId": "t2", "userId": "u1", "role": "OWNER", "status": "ACTIVE", "invitedAt": null, "acceptedAt": "2026-09-05T08:30:00.000Z" },
+    { "id": "mb5", "treeId": "t2", "userId": "u3", "role": "VIEWER", "status": "INVITED", "invitedAt": "2026-09-06T09:00:00.000Z", "acceptedAt": null }
+  ],
+
+  "people": [
+    { "id": "p01", "treeId": "t1", "fullName": "Nguyễn Văn An", "nickname": "Ông An", "gender": "MALE", "birthDate": "1935-03-12", "deathDate": "2010-08-04", "isLiving": false, "photoUrl": null, "bio": "Founder of the family record. Fisherman on the river until 1975, then a mechanic in the city for thirty years.", "createdById": "u1", "createdAt": "2026-09-01T09:00:00.000Z" },
+    { "id": "p02", "treeId": "t1", "fullName": "Trần Thị Bình", "nickname": "Bà Bình", "gender": "FEMALE", "birthDate": "1938-11-02", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Married into the family in 1958 and kept the household accounts for six decades. Still writes every birthday card by hand.", "createdById": "u1", "createdAt": "2026-09-01T09:05:00.000Z" },
+
+    { "id": "p03", "treeId": "t1", "fullName": "Nguyễn Văn Cường", "nickname": "Cường", "gender": "MALE", "birthDate": "1960-05-19", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Eldest of the three. Teacher of mathematics for twenty-eight years.", "createdById": "u1", "createdAt": "2026-09-01T09:10:00.000Z" },
+    { "id": "p04", "treeId": "t1", "fullName": "Lê Thị Cúc", "nickname": "Cúc", "gender": "FEMALE", "birthDate": "1962-01-25", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "No parents recorded in this tree — she married into it — so her generation is taken from her husband. Nurse in the provincial hospital.", "createdById": "u1", "createdAt": "2026-09-01T09:15:00.000Z" },
+    { "id": "p05", "treeId": "t1", "fullName": "Nguyễn Thị Hạnh", "nickname": "Hạnh", "gender": "FEMALE", "birthDate": "1963-09-08", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Kept the family photographs after 1990, which is most of where these dates come from.", "createdById": "u1", "createdAt": "2026-09-01T09:20:00.000Z" },
+    { "id": "p06", "treeId": "t1", "fullName": "Trần Văn Dũng", "nickname": "Dũng", "gender": "MALE", "birthDate": "1961-07-14", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": null, "createdById": "u1", "createdAt": "2026-09-01T09:25:00.000Z" },
+    { "id": "p07", "treeId": "t1", "fullName": "Nguyễn Văn Hải", "nickname": "Hải", "gender": "MALE", "birthDate": "1967-02-21", "deathDate": "2019-12-30", "isLiving": false, "photoUrl": null, "bio": "Ran the workshop on the corner. His tools passed to his son's generation.", "createdById": "u1", "createdAt": "2026-09-01T09:30:00.000Z" },
+    { "id": "p08", "treeId": "t1", "fullName": "Phạm Thị Giang", "nickname": "Giang", "gender": "FEMALE", "birthDate": "1969-06-17", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Keeps the garden that the whole street uses cuttings from.", "createdById": "u1", "createdAt": "2026-09-01T09:35:00.000Z" },
+
+    { "id": "p09", "treeId": "t1", "fullName": "Nguyễn Minh Khang", "nickname": "Khang", "gender": "MALE", "birthDate": "1985-04-03", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Eldest grandchild. Kept the workshop going until 2021.", "createdById": "u2", "createdAt": "2026-09-02T11:00:00.000Z" },
+    { "id": "p10", "treeId": "t1", "fullName": "Nguyễn Ngọc Lan", "nickname": "Lan", "gender": "FEMALE", "birthDate": "1988-10-12", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Accounts manager. The one who remembers every date in this tree.", "createdById": "u2", "createdAt": "2026-09-02T11:05:00.000Z" },
+    { "id": "p11", "treeId": "t1", "fullName": "Trần Đức Anh", "nickname": "Anh", "gender": "MALE", "birthDate": "1987-08-27", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "From the Trần side of the family by his father. Build engineer.", "createdById": "u2", "createdAt": "2026-09-02T11:10:00.000Z" },
+    { "id": "p12", "treeId": "t1", "fullName": "Nguyễn Thị Minh", "nickname": "Minh", "gender": "FEMALE", "birthDate": "1992-12-05", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Started recording the family history on paper in 2019; this tree is that notebook, typed up.", "createdById": "u2", "createdAt": "2026-09-02T11:15:00.000Z" },
+    { "id": "p13", "treeId": "t1", "fullName": "Võ Văn Nam", "nickname": "Nam", "gender": "MALE", "birthDate": "1984-03-30", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "No parents recorded in this tree — married to Lan — so he sits in her generation rather than at the top.", "createdById": "u2", "createdAt": "2026-09-02T11:20:00.000Z" },
+    { "id": "p14", "treeId": "t1", "fullName": "Đặng Thu Hà", "nickname": "Hà", "gender": "FEMALE", "birthDate": null, "deathDate": null, "isLiving": true, "photoUrl": null, "bio": null, "createdById": "u2", "createdAt": "2026-09-02T11:25:00.000Z" },
+    { "id": "p15", "treeId": "t1", "fullName": "Lê Hoàng Long", "nickname": "Long", "gender": "MALE", "birthDate": "1990-09-19", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Photographer; most of the pictures in this tree are his.", "createdById": "u2", "createdAt": "2026-09-02T11:30:00.000Z" },
+    { "id": "p16", "treeId": "t1", "fullName": "Bùi Thị Phương", "nickname": "Phương", "gender": "FEMALE", "birthDate": "1986-07-07", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Married to Khang. Paediatrician.", "createdById": "u2", "createdAt": "2026-09-02T11:35:00.000Z" },
+    { "id": "p17", "treeId": "t1", "fullName": "Phạm Tuấn Kiệt", "nickname": "Kiệt", "gender": "MALE", "birthDate": "1991-02-11", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": null, "createdById": "u2", "createdAt": "2026-09-02T11:40:00.000Z" },
+
+    { "id": "p18", "treeId": "t1", "fullName": "Nguyễn An Nhiên", "nickname": "Nhiên", "gender": "FEMALE", "birthDate": "2019-05-15", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "The youngest of the fourth generation recorded so far.", "createdById": "u2", "createdAt": "2026-09-02T11:45:00.000Z" },
+    { "id": "p19", "treeId": "t1", "fullName": "Võ Gia Bảo", "nickname": "Bảo", "gender": "MALE", "birthDate": "2012-01-09", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Swims for the district team.", "createdById": "u2", "createdAt": "2026-09-02T11:50:00.000Z" },
+    { "id": "p20", "treeId": "t1", "fullName": "Võ Khánh Linh", "nickname": "Linh", "gender": "FEMALE", "birthDate": "2015-06-23", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": null, "createdById": "u2", "createdAt": "2026-09-02T11:55:00.000Z" },
+    { "id": "p21", "treeId": "t1", "fullName": "Trần Gia Huy", "nickname": "Huy", "gender": "MALE", "birthDate": "2014-03-02", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Asks about the workshop tools every visit.", "createdById": "u2", "createdAt": "2026-09-02T12:00:00.000Z" },
+    { "id": "p22", "treeId": "t1", "fullName": "Lê Nhật Nam", "nickname": "Nhật Nam", "gender": "MALE", "birthDate": "2020-11-30", "deathDate": null, "isLiving": true, "photoUrl": null, "bio": "Born during the closure; has met his great-grandmother's photographs before the rest of the branch.", "createdById": "u2", "createdAt": "2026-09-02T12:05:00.000Z" }
+  ],
+
+  "relations": [
+    { "id": "r01", "treeId": "t1", "fromId": "p01", "toId": "p03", "type": "PARENT" },
+    { "id": "r02", "treeId": "t1", "fromId": "p01", "toId": "p05", "type": "PARENT" },
+    { "id": "r03", "treeId": "t1", "fromId": "p01", "toId": "p07", "type": "PARENT" },
+    { "id": "r04", "treeId": "t1", "fromId": "p02", "toId": "p03", "type": "PARENT" },
+    { "id": "r05", "treeId": "t1", "fromId": "p02", "toId": "p05", "type": "PARENT" },
+    { "id": "r06", "treeId": "t1", "fromId": "p02", "toId": "p07", "type": "PARENT" },
+    { "id": "r07", "treeId": "t1", "fromId": "p03", "toId": "p09", "type": "PARENT" },
+    { "id": "r08", "treeId": "t1", "fromId": "p03", "toId": "p10", "type": "PARENT" },
+    { "id": "r09", "treeId": "t1", "fromId": "p04", "toId": "p09", "type": "PARENT" },
+    { "id": "r10", "treeId": "t1", "fromId": "p04", "toId": "p10", "type": "PARENT" },
+    { "id": "r11", "treeId": "t1", "fromId": "p05", "toId": "p11", "type": "PARENT" },
+    { "id": "r12", "treeId": "t1", "fromId": "p06", "toId": "p11", "type": "PARENT" },
+    { "id": "r13", "treeId": "t1", "fromId": "p07", "toId": "p12", "type": "PARENT" },
+    { "id": "r14", "treeId": "t1", "fromId": "p08", "toId": "p12", "type": "PARENT" },
+    { "id": "r15", "treeId": "t1", "fromId": "p09", "toId": "p18", "type": "PARENT" },
+    { "id": "r16", "treeId": "t1", "fromId": "p16", "toId": "p18", "type": "PARENT" },
+    { "id": "r17", "treeId": "t1", "fromId": "p10", "toId": "p19", "type": "PARENT" },
+    { "id": "r18", "treeId": "t1", "fromId": "p10", "toId": "p20", "type": "PARENT" },
+    { "id": "r19", "treeId": "t1", "fromId": "p13", "toId": "p19", "type": "PARENT" },
+    { "id": "r20", "treeId": "t1", "fromId": "p13", "toId": "p20", "type": "PARENT" },
+    { "id": "r21", "treeId": "t1", "fromId": "p11", "toId": "p21", "type": "PARENT" },
+    { "id": "r22", "treeId": "t1", "fromId": "p14", "toId": "p21", "type": "PARENT" },
+    { "id": "r23", "treeId": "t1", "fromId": "p12", "toId": "p22", "type": "PARENT" },
+    { "id": "r24", "treeId": "t1", "fromId": "p15", "toId": "p22", "type": "PARENT" },
+
+    { "id": "r25", "treeId": "t1", "fromId": "p01", "toId": "p02", "type": "SPOUSE" },
+    { "id": "r26", "treeId": "t1", "fromId": "p03", "toId": "p04", "type": "SPOUSE" },
+    { "id": "r27", "treeId": "t1", "fromId": "p05", "toId": "p06", "type": "SPOUSE" },
+    { "id": "r28", "treeId": "t1", "fromId": "p07", "toId": "p08", "type": "SPOUSE" },
+    { "id": "r29", "treeId": "t1", "fromId": "p09", "toId": "p16", "type": "SPOUSE" },
+    { "id": "r30", "treeId": "t1", "fromId": "p10", "toId": "p13", "type": "SPOUSE" },
+    { "id": "r31", "treeId": "t1", "fromId": "p11", "toId": "p14", "type": "SPOUSE" },
+    { "id": "r32", "treeId": "t1", "fromId": "p12", "toId": "p15", "type": "SPOUSE" },
+
+    { "id": "r33", "treeId": "t1", "fromId": "p09", "toId": "p17", "type": "FRIEND" },
+
+    { "id": "r34", "treeId": "t1", "fromId": "p03", "toId": "p05", "type": "SIBLING" },
+    { "id": "r35", "treeId": "t1", "fromId": "p03", "toId": "p07", "type": "SIBLING" },
+    { "id": "r36", "treeId": "t1", "fromId": "p05", "toId": "p07", "type": "SIBLING" }
+  ],
+
+  "memories": [
+    { "id": "mm1", "treeId": "t1", "personId": "p01", "authorId": "u1", "title": "The wedding of An and Bình", "body": "They married in the spring of 1958 at the house that is still standing. There was no photographer, so nobody in the family knows what An wore.", "happenedAt": "1958-02-14", "photoUrl": null, "visibility": "TREE", "createdAt": "2026-09-04T14:00:00.000Z" },
+    { "id": "mm2", "treeId": "t1", "personId": "p03", "authorId": "u2", "title": "Lunar New Year 2005", "body": "The last year all three siblings were under one roof at once. Cường cooked; Hải complained about the fish.", "happenedAt": "2005-02-09", "photoUrl": null, "visibility": "TREE", "createdAt": "2026-09-04T14:10:00.000Z" },
+    { "id": "mm3", "treeId": "t1", "personId": "p01", "authorId": "u1", "title": "What An said about the years after 1975", "body": "Written down from a conversation in 2008. Private for now — I want the family to agree on what to publish before it goes to everyone.", "happenedAt": "2008-06-11", "photoUrl": null, "visibility": "PRIVATE", "createdAt": "2026-09-04T14:20:00.000Z" },
+    { "id": "mm4", "treeId": "t1", "personId": "p09", "authorId": "u2", "title": "Khang's first day of school", "body": "He refused to let go of the gate until his mother promised to come back at noon.", "happenedAt": "1991-09-01", "photoUrl": null, "visibility": "PRIVATE", "createdAt": "2026-09-04T14:30:00.000Z" },
+    { "id": "mm5", "treeId": "t1", "personId": "p07", "authorId": "u1", "title": "The workshop", "body": "No date on this one — it belongs to no particular year. The bench by the window was moved twice and is still there.", "happenedAt": null, "photoUrl": null, "visibility": "TREE", "createdAt": "2026-09-04T14:40:00.000Z" },
+    { "id": "mm6", "treeId": "t1", "personId": "p19", "authorId": "u2", "title": "Bảo swam the whole length", "body": "District gala. He came third and was more pleased about the ribbon than the placing.", "happenedAt": "2024-07-21", "photoUrl": null, "visibility": "TREE", "createdAt": "2026-09-04T14:50:00.000Z" }
+  ]
+}

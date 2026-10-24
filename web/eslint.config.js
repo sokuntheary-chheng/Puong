@@ -25,8 +25,19 @@ export default tseslint.config(
   },
 
   {
+    // The application runs in the browser...
+    files: ['src/**/*.{ts,vue}'],
     languageOptions: {
       globals: { ...globals.browser },
+    },
+  },
+
+  {
+    // ...but the build config and scripts/check-generations.mjs run in Node.
+    // Without this the seed checker is reported as `process is not defined`.
+    files: ['*.config.{js,ts}', 'scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { ...globals.node },
     },
   },
 
