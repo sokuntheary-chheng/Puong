@@ -8,6 +8,10 @@ Supporting documents for the Puong project.
 | `SRS.md` | The source of the PDF, in Markdown. |
 | `print.css` | A4 print stylesheet used to render the PDF. |
 | `render-pdf.js` | The exact script that produced the shipped PDF. |
+| `design.md` | Design decisions for M1–M4: where a parentless person is placed, the role × action permission matrix, the six routes, the memory-form validation rules, what is out of scope. |
+| `m1-explain.md` | The graded M1 answer: what state lives in the Pinia store and what stays inside a component, and why. |
+| `wireframes.md` | Seven annotated wireframe sheets — the six main screens plus loading/empty/error (M1 checklist item). |
+| `wireframes/` | The SVG sheets themselves and `build.mjs`, which regenerates them from the route table in `design.md` §3. |
 
 ## The submission PDF
 
