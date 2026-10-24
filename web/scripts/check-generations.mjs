@@ -277,8 +277,8 @@ if (deceased.length === 0) fail('no deceased person — the age-at-death check h
 else pass(`deceased: ${deceased.join(', ')} (age at death, FR-4.3)`);
 
 const undated = db.memories.filter((m) => m.happenedAt === null).map((m) => m.id);
-if (undated.length === 0) fail('no undated memory — FR-6.3 has nothing to test');
-else pass(`undated memories: ${undated.join(', ')} (FR-6.3)`);
+if (undated.length === 0) fail('no undated memory — FR-6.1 has nothing to test');
+else pass(`undated memories: ${undated.join(', ')} (optional date, FR-6.1)`);
 
 const privateMm = db.memories.filter((m) => m.visibility === 'PRIVATE').map((m) => m.id);
 if (privateMm.length === 0) fail('no PRIVATE memory — FR-6.8 has nothing to test');

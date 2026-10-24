@@ -261,7 +261,49 @@ Two rules follow from this table:
 
 ---
 
-## 4. Out of scope for this document
+## 4. Memory form validation
+
+The client validates; the server does not trust it. These are the same rules
+in both places, implemented once as pure functions in
+`web/src/utils/memoryValidation.ts` and unit-tested there (NFR-3.1), so that
+the two cannot drift.
+
+| Field | Rule | Source |
+|---|---|---|
+| Title | Required; whitespace only does not count | FR-6.1 |
+| Body | Required; whitespace only does not count | FR-6.1 |
+| Occurred date | Optional; when present must be a real `YYYY-MM-DD` calendar date | FR-6.1 |
+| Photograph | Optional; when present JPEG, PNG or WebP, at most 5 MB | FR-6.2 |
+| Visibility | `TREE` (default) or `PRIVATE` | FR-6.6 |
+
+**No length limit is imposed on the title or the body.** FR-2.2 sets one for
+tree names and says nothing about memories; inventing one in the client would
+make the client stricter than the specification, and inventing a different one
+in the database would make the two disagree.
+
+The date rule is written as a real-calendar check rather than a `Date`
+round-trip because `new Date('2026-02-31')` does not throw — it silently
+becomes 2 March. A pasted or scripted value must not survive as a different
+date than the one written.
+
+Three display rules follow from how the form behaves:
+
+1. **Nothing is marked invalid until the field has been submitted or left.**
+   Flagging a required title before the user has typed is the most common way
+   a form feels like it is scolding, and it makes screen readers announce on
+   focus.
+2. **An error clears as soon as the value becomes acceptable**, not on the
+   next submit — otherwise the form reports stale failures.
+3. **Focus moves to the first field that is wrong** on a failed submit, and
+   the count of problems is announced through `role="alert"`.
+
+The MIME type checked in the browser is the file's *declared* type, which is
+only a claim. M2 re-checks the magic bytes on upload, which is the check that
+actually holds.
+
+---
+
+## 5. Out of scope for this document
 
 The API contract (`docs/api.md`, M2), the ERD (`docs/erd.md`, M2), the seed script
 (`prisma/seed.ts`, M2) and the README (M5) are separate deliverables and are not started
