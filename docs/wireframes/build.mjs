@@ -21,13 +21,13 @@ mkdirSync(outDir, { recursive: true });
 const W = 960;
 const FONT =
   'font-family="-apple-system, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif"';
-const INK = '#2f2a24';
-const MUTED = '#7a736a';
-const RULE = '#cfc9bd';
-const SURF = '#faf8f3';
-const ACCENT = '#2f5d8a';
-const DANGER = '#a4322a';
-const BARE = '#e4e0d6';
+const INK = '#46352f'; /* --text */
+const MUTED = '#867972'; /* text mixed towards the canvas */
+const RULE = '#e6d6c4'; /* --border */
+const SURF = '#fffdf9'; /* --surface */
+const ACCENT = '#b9634b'; /* --primary */
+const DANGER = '#8d5140'; /* primary mixed towards the text */
+const BARE = '#f7f1e8'; /* --canvas */
 
 const esc = (s) =>
   String(s)
@@ -44,7 +44,7 @@ const T = (x, y, t, o = {}) =>
   } text-anchor="${o.anchor ?? 'start'}">${esc(t)}</text>`;
 
 const BOX = (x, y, w, h, o = {}) =>
-  `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${o.rx ?? 6}" fill="${
+  `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${o.rx ?? 12}" fill="${
     o.fill ?? SURF
   }" stroke="${o.stroke ?? RULE}"${o.sw ? ` stroke-width="${o.sw}"` : ''}/>`;
 
@@ -121,13 +121,13 @@ function page(name, H, body, title) {
     BOX(300, 116, 360, 306),
     T(324, 152, 'Log in', { size: 17, weight: 700 }),
     T(324, 188, 'Email', { size: 12, weight: 600 }),
-    BOX(324, 196, 312, 32, { fill: '#ffffff' }),
+    BOX(324, 196, 312, 32, { fill: SURF, rx: 8 }),
     T(334, 217, 'owner@puong.dev', { size: 12, fill: MUTED }),
     T(324, 254, 'Password', { size: 12, weight: 600 }),
-    BOX(324, 262, 312, 32, { fill: '#ffffff' }),
+    BOX(324, 262, 312, 32, { fill: SURF, rx: 8 }),
     T(334, 283, '••••••••', { size: 12, fill: MUTED }),
-    BOX(324, 316, 120, 34, { fill: ACCENT, stroke: ACCENT }),
-    T(384, 338, 'Log in', { size: 13, weight: 600, fill: '#ffffff', anchor: 'middle' }),
+    BOX(324, 316, 120, 34, { fill: ACCENT, stroke: ACCENT, rx: 8 }),
+    T(384, 338, 'Log in', { size: 13, weight: 600, fill: SURF, anchor: 'middle' }),
     wrap(
       [
         'Authentication itself is M3 — until then the footer',
@@ -230,7 +230,7 @@ function page(name, H, body, title) {
     crumb('My trees / Mango family'),
     T(24, 136, 'Mango family', { size: 22, weight: 700 }),
     T(936, 134, 'You are owner here', { size: 12, fill: MUTED, anchor: 'end' }),
-    BOX(24, 156, 912, 296, { fill: '#ffffff' }),
+    BOX(24, 156, 912, 296, { fill: SURF }),
     ...cols.flatMap((col) => {
       const out = [T(col.x, 184, col.title, { size: 10.5, fill: MUTED, weight: 600 })];
       col.cards.forEach(([name, dates, flagged], i) => {
@@ -239,7 +239,7 @@ function page(name, H, body, title) {
         const isSel = col.selected === i;
         out.push(
           BOX(col.x, y, 200, h, {
-            fill: '#ffffff',
+            fill: SURF,
             stroke: isSel ? ACCENT : RULE,
             sw: isSel ? 2 : 1,
           }),
@@ -344,16 +344,16 @@ function page(name, H, body, title) {
     T(24, 136, 'Add a memory', { size: 22, weight: 700 }),
 
     T(24, 176, 'Title', { size: 12.5, weight: 600 }),
-    BOX(24, 184, 520, 32, { fill: '#ffffff', stroke: DANGER }),
+    BOX(24, 184, 520, 32, { fill: SURF, stroke: DANGER, rx: 8 }),
     T(34, 205, '   ', { size: 12 }),
     T(24, 236, 'A title is required.', { size: 11.5, fill: DANGER, weight: 600 }),
 
     T(24, 268, 'Body', { size: 12.5, weight: 600 }),
-    BOX(24, 276, 520, 88, { fill: '#ffffff', stroke: DANGER }),
+    BOX(24, 276, 520, 88, { fill: SURF, stroke: DANGER, rx: 8 }),
     T(24, 388, 'A body is required.', { size: 11.5, fill: DANGER, weight: 600 }),
 
     T(24, 420, 'Occurred on', { size: 12.5, weight: 600 }),
-    BOX(24, 428, 240, 32, { fill: '#ffffff' }),
+    BOX(24, 428, 240, 32, { fill: SURF, rx: 8 }),
     T(34, 449, '1998-12-24', { size: 12, fill: MUTED }),
     T(24, 480, 'Optional.', { size: 11.5, fill: MUTED }),
 
@@ -371,13 +371,13 @@ function page(name, H, body, title) {
     }),
 
     T(24, 634, 'Photograph', { size: 12.5, weight: 600 }),
-    BOX(24, 642, 520, 32, { fill: '#ffffff' }),
+    BOX(24, 642, 520, 32, { fill: SURF, rx: 8 }),
     T(34, 663, 'Choose file…', { size: 12, fill: MUTED }),
     T(24, 694, 'Optional — JPEG, PNG, WebP up to 5 MB.', { size: 11.5, fill: MUTED }),
 
-    BOX(24, 716, 140, 34, { fill: ACCENT, stroke: ACCENT }),
-    T(94, 738, 'Save memory', { size: 13, weight: 600, fill: '#ffffff', anchor: 'middle' }),
-    BOX(180, 716, 90, 34, { fill: '#ffffff' }),
+    BOX(24, 716, 140, 34, { fill: ACCENT, stroke: ACCENT, rx: 8 }),
+    T(94, 738, 'Save memory', { size: 13, weight: 600, fill: SURF, anchor: 'middle' }),
+    BOX(180, 716, 90, 34, { fill: SURF, rx: 8 }),
     T(225, 738, 'Clear', { size: 13, anchor: 'middle' }),
 
     T(24, 784, '2 fields need attention before this can be saved.', {
@@ -412,7 +412,7 @@ function page(name, H, body, title) {
     crumb('My trees / Mango family / search'),
     T(24, 136, 'Search', { size: 22, weight: 700 }),
     T(24, 172, 'Name, nickname or memory text', { size: 12.5, weight: 600 }),
-    BOX(24, 180, 440, 32, { fill: '#ffffff' }),
+    BOX(24, 180, 440, 32, { fill: SURF, rx: 8 }),
     T(34, 201, 'mango', { size: 12.5 }),
     T(24, 234, 'Case- and accent-insensitive: “mango” finds “Mr. Mango”, “hoi an” finds “Hội An”.', {
       size: 11.5,
@@ -421,14 +421,14 @@ function page(name, H, body, title) {
     }),
     T(24, 268, '4 results, page 1 of 1', { size: 12, fill: MUTED }),
     ...rows.flatMap(([kind, title, detail, y]) => [
-      BOX(24, y, 912, 64, { fill: '#ffffff' }),
+      BOX(24, y, 912, 64, { fill: SURF }),
       T(40, y + 28, kind, { size: 10, fill: MUTED, weight: 600 }),
       T(140, y + 28, title, { size: 13.5, weight: 600 }),
       T(140, y + 48, detail, { size: 11.5, fill: MUTED }),
     ]),
-    BOX(24, 536, 100, 32, { fill: '#f4efe7', stroke: RULE }),
+    BOX(24, 536, 100, 32, { fill: BARE, stroke: RULE, rx: 8 }),
     T(74, 557, '‹ Previous', { size: 12, anchor: 'middle', fill: MUTED }),
-    BOX(136, 536, 76, 32, { fill: '#f4efe7', stroke: RULE }),
+    BOX(136, 536, 76, 32, { fill: BARE, stroke: RULE, rx: 8 }),
     T(174, 557, 'Next ›', { size: 12, anchor: 'middle', fill: MUTED }),
     T(256, 557, 'greyed out on the only page — ?page= still rides in the URL', {
       size: 11.5,
@@ -459,12 +459,12 @@ function page(name, H, body, title) {
     T(24, 112, 'My trees', { size: 22, weight: 700 }),
     ...panels.map((p) => T(p.x, 146, p.title, { size: 12, weight: 700, fill: MUTED })),
 
-    BOX(24, 158, 288, 152, { fill: '#ffffff' }),
+    BOX(24, 158, 288, 152, { fill: SURF }),
     `<circle cx="52" cy="192" r="8" fill="none" stroke="${MUTED}" stroke-width="2"/>`,
     T(70, 197, 'Loading…', { size: 13, fill: MUTED }),
     T(40, 292, 'role="status" · aria-live="polite"', { size: 10.5, fill: MUTED }),
 
-    BOX(336, 158, 288, 152, { fill: '#ffffff' }),
+    BOX(336, 158, 288, 152, { fill: SURF }),
     ...wrap(
       [
         'You do not belong to a tree yet.',
@@ -477,7 +477,7 @@ function page(name, H, body, title) {
     ),
     T(352, 292, 'the empty copy is written per screen', { size: 10.5, fill: MUTED }),
 
-    BOX(648, 158, 288, 152, { fill: '#ffffff', stroke: RULE }),
+    BOX(648, 158, 288, 152, { fill: SURF, stroke: RULE }),
     `<rect x="648" y="158" width="4" height="152" fill="${DANGER}"/>`,
     T(664, 192, 'Something went wrong.', { size: 13, weight: 700, fill: DANGER }),
     ...wrap(
@@ -487,7 +487,7 @@ function page(name, H, body, title) {
       17,
       { size: 11.5, fill: MUTED },
     ),
-    BOX(664, 248, 90, 30, { fill: '#ffffff' }),
+    BOX(664, 248, 90, 30, { fill: SURF, rx: 8 }),
     T(709, 268, 'Try again', { size: 12, anchor: 'middle' }),
     T(664, 292, 'role="alert"', { size: 10.5, fill: MUTED }),
 

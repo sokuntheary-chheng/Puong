@@ -127,6 +127,7 @@ function formatDate(value: string | null): string {
         <h2>Memories</h2>
         <RouterLink
           v-if="treeStore.canWrite"
+          class="memories__add"
           :to="{ name: 'memory-new', params: { treeId, personId } }"
         >
           Add a memory
@@ -179,7 +180,7 @@ function formatDate(value: string | null): string {
 <style scoped>
 .crumb {
   font-size: 0.9rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .facts {
@@ -191,7 +192,7 @@ function formatDate(value: string | null): string {
 }
 
 .facts dt {
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .facts dd {
@@ -206,7 +207,7 @@ function formatDate(value: string | null): string {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
   margin: 1rem 0 0.15rem;
 }
 
@@ -217,7 +218,7 @@ function formatDate(value: string | null): string {
 
 .memories__head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
@@ -227,9 +228,28 @@ function formatDate(value: string | null): string {
   margin-bottom: 0.75rem;
 }
 
+/* The page's one action, drawn like the reference's primary button. */
+.memories__add {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 0 1rem;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--surface);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.memories__add:hover {
+  background: color-mix(in srgb, var(--primary) 88%, var(--text));
+  text-decoration: none;
+}
+
 .memories__readonly {
   font-size: 0.85rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .memories {
@@ -242,9 +262,9 @@ function formatDate(value: string | null): string {
 
 .memory {
   padding: 0.75rem 0.9rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-radius: 6px;
-  background: var(--puong-surface, #fffdf8);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
 }
 
 .memory__title {
@@ -264,17 +284,17 @@ function formatDate(value: string | null): string {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .memory__vis--private {
-  color: var(--puong-danger, #a4322a);
+  color: var(--danger);
 }
 
 .memory__meta {
   margin: 0.15rem 0 0.4rem;
   font-size: 0.8rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .memory__body {

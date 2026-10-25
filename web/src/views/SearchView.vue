@@ -188,7 +188,7 @@ function onRetry(): void {
 <style scoped>
 .crumb {
   font-size: 0.9rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 label {
@@ -201,21 +201,21 @@ input {
   width: 100%;
   max-width: 26rem;
   padding: 0.45rem 0.5rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-radius: 4px;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-control);
   font: inherit;
 }
 
 .hint {
   margin-top: 1rem;
   font-size: 0.9rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .count {
   margin: 1.25rem 0 0.5rem;
   font-size: 0.85rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .results {
@@ -230,10 +230,21 @@ input {
   display: grid;
   grid-template-columns: 4.5rem 1fr;
   gap: 0.1rem 0.75rem;
-  padding: 0.5rem 0.65rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-radius: 6px;
-  background: var(--puong-surface, #fffdf8);
+  padding: 0.65rem 0.85rem;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.result:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  text-decoration: none;
 }
 
 .result__kind {
@@ -241,7 +252,7 @@ input {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
   align-self: center;
 }
 
@@ -251,7 +262,7 @@ input {
 
 .result__detail {
   font-size: 0.82rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .pager {
@@ -262,10 +273,10 @@ input {
 
 .pager button {
   font: inherit;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-radius: 4px;
-  background: none;
+  padding: 0 1rem;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
   cursor: pointer;
 }
 

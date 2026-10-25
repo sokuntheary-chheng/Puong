@@ -373,7 +373,7 @@ const acceptedSummary = computed(() => [
 <style scoped>
 .crumb {
   font-size: 0.9rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .form {
@@ -400,24 +400,21 @@ const acceptedSummary = computed(() => [
 .field input[type='text'],
 .field input[type='date'],
 .field textarea {
-  padding: 0.45rem 0.5rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-radius: 4px;
-  font: inherit;
+  width: 100%;
 }
 
 .field--invalid input,
 .field--invalid textarea {
-  border-color: var(--puong-danger, #a4322a);
+  border-color: var(--danger);
 }
 
 .field__hint {
   font-size: 0.82rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .field__hint--error {
-  color: var(--puong-danger, #a4322a);
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -435,7 +432,7 @@ const acceptedSummary = computed(() => [
 
 .choice small {
   display: block;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
   font-weight: 400;
 }
 
@@ -445,22 +442,22 @@ const acceptedSummary = computed(() => [
 }
 
 .actions__secondary {
-  background: none;
-  border: 1px solid var(--puong-rule, #d8d2c6);
+  background: var(--surface);
+  border: var(--hairline) solid var(--border);
 }
 
 .form__summary {
-  color: var(--puong-danger, #a4322a);
+  color: var(--danger);
   font-weight: 600;
 }
 
 .accepted {
   margin-top: 1.5rem;
   padding: 1rem 1.1rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-left: 4px solid var(--puong-ok, #2f6b46);
-  border-radius: 6px;
-  background: var(--puong-surface, #fffdf8);
+  border: var(--hairline) solid var(--border);
+  border-left: 3px solid var(--success);
+  border-radius: var(--radius-card);
+  background: var(--surface);
 }
 
 .accepted h2 {
@@ -471,7 +468,7 @@ const acceptedSummary = computed(() => [
 .accepted p {
   margin: 0 0 0.75rem;
   font-size: 0.9rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .accepted dl {
@@ -483,7 +480,7 @@ const acceptedSummary = computed(() => [
 }
 
 .accepted dt {
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .accepted dd {
@@ -491,8 +488,23 @@ const acceptedSummary = computed(() => [
 }
 
 .accepted__back {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
   margin-top: 0.85rem;
+  padding: 0 1rem;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
   font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.accepted__back:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  text-decoration: none;
 }
 </style>

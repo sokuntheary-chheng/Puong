@@ -64,18 +64,28 @@ const isEmpty = computed(() => store.trees.data.length === 0);
 .trees__item {
   display: grid;
   gap: 0.15rem;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-radius: 6px;
-  background: var(--puong-surface, #fffdf8);
+  padding: 0.85rem 1rem;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  transition: border-color 0.15s ease;
+}
+
+.trees__item:hover {
+  border-color: var(--primary);
 }
 
 .trees__link {
   font-weight: 600;
+  color: var(--text);
+}
+
+.trees__link:hover {
+  color: var(--primary);
 }
 
 .trees__note {
   font-size: 0.85rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 </style>

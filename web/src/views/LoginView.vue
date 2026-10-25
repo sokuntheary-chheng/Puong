@@ -76,19 +76,18 @@ function onSubmit(): void {
 
 .auth input {
   padding: 0.45rem 0.5rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-radius: 4px;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-control);
 }
 
 .auth button {
   margin-top: 1rem;
-  padding: 0.5rem 0.75rem;
   justify-self: start;
 }
 
 .auth__note {
   margin-top: 1rem;
   font-size: 0.9rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 </style>

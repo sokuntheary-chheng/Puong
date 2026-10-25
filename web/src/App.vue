@@ -46,7 +46,14 @@ function resetSeed(): void {
         to="/"
         class="shell__brand"
       >
-        Puong
+        <span
+          class="shell__mark"
+          aria-hidden="true"
+        >P</span>
+        <span class="shell__names">
+          <span class="shell__name">Puong</span>
+          <span class="shell__tag">Your family’s story, connected.</span>
+        </span>
       </RouterLink>
       <nav
         class="shell__nav"
@@ -140,49 +147,92 @@ function resetSeed(): void {
 
 .shell__bar {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid var(--puong-rule, #d8d2c6);
-  background: var(--puong-surface, #fffdf8);
+  padding: 0.7rem 1.5rem;
+  border-bottom: var(--hairline) solid var(--border);
+  background: var(--surface);
 }
 
 .shell__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--text);
+}
+
+.shell__brand:hover {
+  text-decoration: none;
+}
+
+.shell__mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--surface);
+  font-size: 0.95rem;
   font-weight: 700;
-  letter-spacing: 0.01em;
+}
+
+.shell__names {
+  display: grid;
+  line-height: 1.15;
+}
+
+.shell__name {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.shell__tag {
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 .shell__nav {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 1rem;
   font-size: 0.95rem;
 }
 
+.shell__nav a {
+  color: var(--text);
+}
+
+.shell__nav a:hover {
+  color: var(--primary);
+}
+
 .shell__nav a[aria-current='page'] {
   font-weight: 600;
+  color: var(--primary);
   text-decoration: none;
 }
 
 .shell__who {
   font-size: 0.85rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .shell__main {
   flex: 1;
-  padding: 1.5rem 1.25rem 3rem;
-  max-width: 68rem;
+  padding: 1.75rem 1.5rem 3rem;
+  max-width: 72rem;
   width: 100%;
   margin: 0 auto;
 }
 
 .shell__foot {
-  border-top: 1px solid var(--puong-rule, #d8d2c6);
-  padding: 0.5rem 1.25rem;
+  border-top: var(--hairline) solid var(--border);
+  background: var(--surface);
+  padding: 0.5rem 1.5rem;
   font-size: 0.85rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .controls {
@@ -193,8 +243,8 @@ function resetSeed(): void {
 }
 
 .controls fieldset {
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-radius: 6px;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-card);
   padding: 0.6rem 0.85rem 0.85rem;
   display: grid;
   gap: 0.3rem;
@@ -215,12 +265,12 @@ function resetSeed(): void {
   font: inherit;
   margin-top: 0.35rem;
   justify-self: start;
-  padding: 0.25rem 0.6rem;
+  padding: 0 1rem;
 }
 
 .controls__secondary {
-  background: none;
-  border: 1px solid var(--puong-rule, #d8d2c6);
+  background: var(--surface);
+  border: var(--hairline) solid var(--border);
 }
 
 .controls__note {
@@ -236,6 +286,6 @@ function resetSeed(): void {
 }
 
 .choice small {
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 </style>

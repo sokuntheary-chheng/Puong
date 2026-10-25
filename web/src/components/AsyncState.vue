@@ -87,22 +87,22 @@ const emit = defineEmits<{
 <style scoped>
 .async {
   padding: 1.25rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-radius: 6px;
-  background: var(--puong-surface, #fffdf8);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
 }
 
 .async--loading {
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .async--error {
-  border-left: 4px solid var(--puong-danger, #a4322a);
+  border-left: 3px solid var(--danger);
 }
 
 .async--empty {
-  border-left: 4px solid var(--puong-rule, #d8d2c6);
-  color: var(--puong-muted, #6b6257);
+  border-left: 3px solid var(--border);
+  color: var(--text-muted);
 }
 
 .async__mark {
@@ -113,7 +113,7 @@ const emit = defineEmits<{
 .async__title {
   margin: 0 0 0.25rem;
   font-weight: 600;
-  color: var(--puong-danger, #a4322a);
+  color: var(--danger);
 }
 
 .async__detail {

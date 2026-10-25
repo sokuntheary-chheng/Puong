@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="960" height="420">
 <title>Wireframe — loading, empty and error states</title>
-<rect width="960" height="420" fill="#ffffff"/><rect x="0" y="0" width="960" height="30" fill="#efece5"/><rect x="16" y="7" width="620" height="17" rx="8" fill="#ffffff" stroke="#cfc9bd"/><text x="26" y="20" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#7a736a" font-weight="400" text-anchor="start">puong.dev/</text><rect x="0" y="30" width="960" height="44" fill="#faf8f3"/><rect x="0" y="380" width="960" height="40" fill="#faf8f3"/><line x1="0" y1="74" x2="960" y2="74" stroke="#cfc9bd"/><line x1="0" y1="380" x2="960" y2="380" stroke="#cfc9bd"/><text x="24" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" fill="#2f2a24" font-weight="700" text-anchor="start">Puong</text><text x="620" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#2f2a24" font-weight="700" text-anchor="start">My trees</text><text x="706" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#2f2a24" font-weight="400" text-anchor="start">Log in</text><text x="936" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#7a736a" font-weight="400" text-anchor="end">Sokuntheary Chheng · owner</text><text x="24" y="405" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" fill="#7a736a" font-weight="400" text-anchor="start">M1 demo controls ▸   signed-in-as switcher · arm a one-shot failure · reset the data</text>
-<text x="24" y="112" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" fill="#2f2a24" font-weight="700" text-anchor="start">My trees</text>
-<text x="24" y="146" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#7a736a" font-weight="700" text-anchor="start">Loading</text>
-<text x="336" y="146" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#7a736a" font-weight="700" text-anchor="start">Empty</text>
-<text x="648" y="146" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#7a736a" font-weight="700" text-anchor="start">Error</text>
-<rect x="24" y="158" width="288" height="152" rx="6" fill="#ffffff" stroke="#cfc9bd"/>
-<circle cx="52" cy="192" r="8" fill="none" stroke="#7a736a" stroke-width="2"/>
-<text x="70" y="197" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#7a736a" font-weight="400" text-anchor="start">Loading…</text>
-<text x="40" y="292" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">role=&quot;status&quot; · aria-live=&quot;polite&quot;</text>
-<rect x="336" y="158" width="288" height="152" rx="6" fill="#ffffff" stroke="#cfc9bd"/>
+<rect width="960" height="420" fill="#ffffff"/><rect x="0" y="0" width="960" height="30" fill="#efece5"/><rect x="16" y="7" width="620" height="17" rx="8" fill="#ffffff" stroke="#e6d6c4"/><text x="26" y="20" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#867972" font-weight="400" text-anchor="start">puong.dev/</text><rect x="0" y="30" width="960" height="44" fill="#fffdf9"/><rect x="0" y="380" width="960" height="40" fill="#fffdf9"/><line x1="0" y1="74" x2="960" y2="74" stroke="#e6d6c4"/><line x1="0" y1="380" x2="960" y2="380" stroke="#e6d6c4"/><text x="24" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" fill="#46352f" font-weight="700" text-anchor="start">Puong</text><text x="620" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="700" text-anchor="start">My trees</text><text x="706" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400" text-anchor="start">Log in</text><text x="936" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Sokuntheary Chheng · owner</text><text x="24" y="405" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" fill="#867972" font-weight="400" text-anchor="start">M1 demo controls ▸   signed-in-as switcher · arm a one-shot failure · reset the data</text>
+<text x="24" y="112" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" fill="#46352f" font-weight="700" text-anchor="start">My trees</text>
+<text x="24" y="146" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="700" text-anchor="start">Loading</text>
+<text x="336" y="146" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="700" text-anchor="start">Empty</text>
+<text x="648" y="146" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="700" text-anchor="start">Error</text>
+<rect x="24" y="158" width="288" height="152" rx="12" fill="#fffdf9" stroke="#e6d6c4"/>
+<circle cx="52" cy="192" r="8" fill="none" stroke="#867972" stroke-width="2"/>
+<text x="70" y="197" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#867972" font-weight="400" text-anchor="start">Loading…</text>
+<text x="40" y="292" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">role=&quot;status&quot; · aria-live=&quot;polite&quot;</text>
+<rect x="336" y="158" width="288" height="152" rx="12" fill="#fffdf9" stroke="#e6d6c4"/>
 <
 t
 e
@@ -134,12 +134,12 @@ l
 =
 "
 #
+4
+6
+3
+5
 2
 f
-2
-a
-2
-4
 "
  
 f
@@ -343,12 +343,12 @@ l
 =
 "
 #
+4
+6
+3
+5
 2
 f
-2
-a
-2
-4
 "
  
 f
@@ -438,10 +438,10 @@ e
 x
 t
 >
-<text x="352" y="292" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">the empty copy is written per screen</text>
-<rect x="648" y="158" width="288" height="152" rx="6" fill="#ffffff" stroke="#cfc9bd"/>
-<rect x="648" y="158" width="4" height="152" fill="#a4322a"/>
-<text x="664" y="192" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#a4322a" font-weight="700" text-anchor="start">Something went wrong.</text>
+<text x="352" y="292" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">the empty copy is written per screen</text>
+<rect x="648" y="158" width="288" height="152" rx="12" fill="#fffdf9" stroke="#e6d6c4"/>
+<rect x="648" y="158" width="4" height="152" fill="#8d5140"/>
+<text x="664" y="192" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#8d5140" font-weight="700" text-anchor="start">Something went wrong.</text>
 <
 t
 e
@@ -566,12 +566,12 @@ l
 =
 "
 #
-7
-a
-7
-3
+8
 6
-a
+7
+9
+7
+2
 "
  
 f
@@ -786,12 +786,12 @@ l
 =
 "
 #
-7
-a
-7
-3
+8
 6
-a
+7
+9
+7
+2
 "
  
 f
@@ -878,12 +878,12 @@ e
 x
 t
 >
-<rect x="664" y="248" width="90" height="30" rx="6" fill="#ffffff" stroke="#cfc9bd"/>
-<text x="709" y="268" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#2f2a24" font-weight="400" text-anchor="middle">Try again</text>
-<text x="664" y="292" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7a736a" font-weight="400" text-anchor="start">role=&quot;alert&quot;</text>
-<text x="24" y="344" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#7a736a" font-weight="400" font-style="italic" text-anchor="start">A fourth state — idle — renders nothing: no spinner for a request nobody has made.</text>
-<g><circle cx="300" cy="170" r="9" fill="#2f5d8a"/><text x="300" y="173.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">1</text></g>
-<g><circle cx="612" cy="170" r="9" fill="#2f5d8a"/><text x="612" y="173.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">2</text></g>
-<g><circle cx="924" cy="170" r="9" fill="#2f5d8a"/><text x="924" y="173.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">3</text></g>
-<g><circle cx="700" cy="340" r="9" fill="#2f5d8a"/><text x="700" y="343.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">4</text></g>
+<rect x="664" y="248" width="90" height="30" rx="8" fill="#fffdf9" stroke="#e6d6c4"/>
+<text x="709" y="268" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#46352f" font-weight="400" text-anchor="middle">Try again</text>
+<text x="664" y="292" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">role=&quot;alert&quot;</text>
+<text x="24" y="344" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="400" font-style="italic" text-anchor="start">A fourth state — idle — renders nothing: no spinner for a request nobody has made.</text>
+<g><circle cx="300" cy="170" r="9" fill="#b9634b"/><text x="300" y="173.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">1</text></g>
+<g><circle cx="612" cy="170" r="9" fill="#b9634b"/><text x="612" y="173.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">2</text></g>
+<g><circle cx="924" cy="170" r="9" fill="#b9634b"/><text x="924" y="173.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">3</text></g>
+<g><circle cx="700" cy="340" r="9" fill="#b9634b"/><text x="700" y="343.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">4</text></g>
 </svg>

@@ -198,7 +198,7 @@ function lifespan(person: { birthDate: string | null; deathDate: string | null }
 <style scoped>
 .crumb {
   font-size: 0.9rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .head {
@@ -214,7 +214,7 @@ function lifespan(person: { birthDate: string | null; deathDate: string | null }
 
 .role {
   font-size: 0.85rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .role__note {
@@ -238,7 +238,7 @@ function lifespan(person: { birthDate: string | null; deathDate: string | null }
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
   margin: 0 0 0.5rem;
 }
 
@@ -255,17 +255,28 @@ function lifespan(person: { birthDate: string | null; deathDate: string | null }
   gap: 0.1rem;
   width: 100%;
   text-align: left;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-radius: 6px;
-  background: var(--puong-surface, #fffdf8);
+  padding: 0.6rem 0.75rem;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
   font: inherit;
+  font-weight: 400;
+  color: var(--text);
   cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
+.card:hover {
+  border-color: var(--primary);
+}
+
+/* Selected: the rust border and the wash, exactly as the reference screen
+   draws it — a ring of colour, not a shadow. */
 .card--selected {
-  border-color: var(--puong-accent, #2f5d8a);
-  box-shadow: 0 0 0 1px var(--puong-accent, #2f5d8a);
+  border-color: var(--primary);
+  background: var(--primary-soft);
 }
 
 .card__name {
@@ -275,22 +286,22 @@ function lifespan(person: { birthDate: string | null; deathDate: string | null }
 .card__nick,
 .card__dates {
   font-size: 0.8rem;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .card__flag {
   font-size: 0.75rem;
   font-style: italic;
-  color: var(--puong-danger, #a4322a);
+  color: var(--danger);
 }
 
 .panel {
   margin-top: 1.5rem;
   padding: 1rem 1.1rem;
-  border: 1px solid var(--puong-rule, #d8d2c6);
-  border-left: 4px solid var(--puong-accent, #2f5d8a);
-  border-radius: 6px;
-  background: var(--puong-surface, #fffdf8);
+  border: var(--hairline) solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-card);
+  background: var(--surface);
 }
 
 .panel h2 {
@@ -308,7 +319,7 @@ function lifespan(person: { birthDate: string | null; deathDate: string | null }
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--puong-muted, #6b6257);
+  color: var(--text-muted);
 }
 
 .panel__group p {
@@ -317,8 +328,21 @@ function lifespan(person: { birthDate: string | null; deathDate: string | null }
 }
 
 .panel__open {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
   margin-top: 0.9rem;
+  padding: 0 1rem;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--surface);
   font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.panel__open:hover {
+  background: color-mix(in srgb, var(--primary) 88%, var(--text));
+  text-decoration: none;
 }
 </style>
