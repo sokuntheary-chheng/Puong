@@ -152,8 +152,8 @@ function page(name, H, body, title) {
 {
   const H = 480;
   const cards = [
-    ['Nguyễn family', 'Four generations · 23 people · you are the owner', 130],
-    ['Trần family', 'Seeded empty on purpose, to show what an empty tree looks like (FR-8.4)', 216],
+    ['Mango family', 'Four generations · 23 people · you are the owner', 130],
+    ['Mangosteen family', 'Seeded empty on purpose, to show what an empty tree looks like (FR-8.4)', 216],
   ];
   const body = [
     shell({ url: 'puong.dev/', active: 'My trees', H }),
@@ -186,9 +186,9 @@ function page(name, H, body, title) {
       x: 44,
       title: 'GENERATION 1',
       cards: [
-        ['Nguyễn Văn An', '1935 – 2010', false],
-        ['Trần Thị Bình', '1938 –', false],
-        ['Hoàng Thị Bé', '1959 –', true],
+        ['Mr. Mango', '1935 – 2010', false],
+        ['Mrs. Mangosteen', '1938 –', false],
+        ['Apple Bottom', '1959 –', true],
       ],
       more: null,
     },
@@ -196,9 +196,9 @@ function page(name, H, body, title) {
       x: 272,
       title: 'GENERATION 2',
       cards: [
-        ['Nguyễn Văn Cường', '1960 –', false],
-        ['Lê Thị Cúc', '1962 –', false],
-        ['Nguyễn Thị Hạnh', '1963 –', false],
+        ['Jack Fruitson', '1960 –', false],
+        ['Cherry Berry', '1962 –', false],
+        ['Sir Watermelon', '1963 –', false],
       ],
       more: '… 3 more',
       selected: 1,
@@ -207,9 +207,9 @@ function page(name, H, body, title) {
       x: 500,
       title: 'GENERATION 3',
       cards: [
-        ['Trần Văn Dũng', '1961 –', false],
-        ['Nguyễn Văn Hải', '1967 – 2019', false],
-        ['Phạm Thị Oanh', '1969 –', false],
+        ['Coco Nutley', '1961 –', false],
+        ['Peachy Chan', '1967 – 2019', false],
+        ['Dr. Pine Apple', '1969 –', false],
       ],
       more: '… 6 more',
     },
@@ -217,9 +217,9 @@ function page(name, H, body, title) {
       x: 728,
       title: 'GENERATION 4',
       cards: [
-        ['Nguyễn Minh Khoa', '1988 –', false],
-        ['Trần Bảo Long', '1991 –', false],
-        ['Lê Thu Hà', '1994 –', false],
+        ['Chheng Sokuntheary', '1985 –', false],
+        ['Papaya Parker', '1988 –', false],
+        ['Grape Gatsby', '1987 –', false],
       ],
       more: '… 2 more',
     },
@@ -227,8 +227,8 @@ function page(name, H, body, title) {
 
   const body = [
     shell({ url: 'puong.dev/trees/t1?person=p04', active: 'My trees', H }),
-    crumb('My trees / Nguyễn family'),
-    T(24, 136, 'Nguyễn family', { size: 22, weight: 700 }),
+    crumb('My trees / Mango family'),
+    T(24, 136, 'Mango family', { size: 22, weight: 700 }),
     T(936, 134, 'You are owner here', { size: 12, fill: MUTED, anchor: 'end' }),
     BOX(24, 156, 912, 296, { fill: '#ffffff' }),
     ...cols.flatMap((col) => {
@@ -255,15 +255,15 @@ function page(name, H, body, title) {
     }),
     BOX(24, 474, 912, 196),
     `<rect x="24" y="474" width="4" height="196" fill="${ACCENT}"/>`,
-    T(44, 506, 'Lê Thị Cúc', { size: 15, weight: 700 }),
-    T(44, 528, 'Cúc · born 1962 in Cần Thơ', { size: 12, fill: MUTED }),
+    T(44, 506, 'Cherry Berry', { size: 15, weight: 700 }),
+    T(44, 528, 'Cherry · born 1962 in Cần Thơ', { size: 12, fill: MUTED }),
     T(44, 560, 'SPOUSE', { size: 10.5, fill: MUTED, weight: 600 }),
-    T(44, 580, 'Nguyễn Văn Cường', { size: 12.5, fill: ACCENT }),
+    T(44, 580, 'Jack Fruitson', { size: 12.5, fill: ACCENT }),
     T(260, 560, 'CHILDREN', { size: 10.5, fill: MUTED, weight: 600 }),
-    T(260, 580, 'Lê Nhật Nam', { size: 12.5, fill: ACCENT }),
+    T(260, 580, 'Chheng Sokuntheary, Papaya Parker', { size: 12.5, fill: ACCENT }),
     T(44, 616, 'PARENTS', { size: 10.5, fill: MUTED, weight: 600 }),
     T(44, 636, 'not recorded in this tree', { size: 12.5, fill: MUTED, italic: true }),
-    T(936, 646, 'Open Lê Thị Cúc’s page →', { size: 12.5, weight: 600, fill: ACCENT, anchor: 'end' }),
+    T(936, 646, 'Open Cherry Berry’s page →', { size: 12.5, weight: 600, fill: ACCENT, anchor: 'end' }),
     DOT(204, 15, 1),
     DOT(300, 15, 2),
     DOT(152, 180, 3),
@@ -281,19 +281,19 @@ function page(name, H, body, title) {
 {
   const H = 760;
   const facts = [
-    ['Nickname', 'Ông An'],
-    ['Born', '1935-04-02'],
-    ['Died', '2010-11-19'],
+    ['Nickname', 'Mango'],
+    ['Born', '1935-03-12'],
+    ['Died', '2010-08-04'],
   ];
   const memories = [
-    ['The wedding of An and Bình', '1958-12-24', 'WHOLE TREE', false, 418],
-    ['What An said about the years after 1975', '2008-06-10', 'ONLY ME', true, 514],
+    ['The wedding of Mango and Mangosteen', '1958-02-14', 'WHOLE TREE', false, 418],
+    ['What Mr. Mango said about the years after 1975', '2008-06-11', 'ONLY ME', true, 514],
     ['A childhood in the old house', 'no date recorded', 'WHOLE TREE', false, 610],
   ];
   const body = [
     shell({ url: 'puong.dev/trees/t1/people/p01', active: 'My trees', H }),
-    crumb('My trees / Nguyễn family / Nguyễn Văn An'),
-    T(24, 136, 'Nguyễn Văn An', { size: 22, weight: 700 }),
+    crumb('My trees / Mango family / Mr. Mango'),
+    T(24, 136, 'Mr. Mango', { size: 22, weight: 700 }),
     ...facts.flatMap(([k, v], i) => [
       T(24, 168 + i * 24, k, { size: 12, fill: MUTED }),
       T(160, 168 + i * 24, v, { size: 12 }),
@@ -305,10 +305,10 @@ function page(name, H, body, title) {
     }),
     BOX(24, 276, 300, 64),
     T(40, 300, 'SPOUSE', { size: 10.5, fill: MUTED, weight: 600 }),
-    T(40, 324, 'Trần Thị Bình', { size: 13, fill: ACCENT }),
+    T(40, 324, 'Mrs. Mangosteen', { size: 13, fill: ACCENT }),
     BOX(340, 276, 300, 64),
     T(356, 300, 'CHILDREN', { size: 10.5, fill: MUTED, weight: 600 }),
-    T(356, 324, 'Cường, Hạnh, Dũng, Hải', { size: 13, fill: ACCENT }),
+    T(356, 324, 'Jack Fruitson, Sir Watermelon, Peachy Chan', { size: 13, fill: ACCENT }),
     LINE(24, 368, 936, 368),
     T(24, 402, 'Memories', { size: 16, weight: 700 }),
     T(936, 402, '+ Add a memory', { size: 13, weight: 600, fill: ACCENT, anchor: 'end' }),
@@ -402,38 +402,44 @@ function page(name, H, body, title) {
 {
   const H = 620;
   const rows = [
-    ['PERSON', 'Nguyễn Văn An', 'Ông An · 1935', 248],
-    ['MEMORY', 'What An said about the years after 1975', '2008-06-10 · PRIVATE', 320],
-    ['PERSON', 'Nguyễn Thị Hạnh', 'Hạnh · 1963', 392],
+    ['PERSON', 'Mr. Mango', 'Mango · 1935', 248],
+    ['PERSON', 'Mrs. Mangosteen', 'Mangosteen · 1938 –', 316],
+    ['MEMORY', 'The wedding of Mango and Mangosteen', '1958-02-14 · WHOLE TREE', 384],
+    ['MEMORY', 'What Mr. Mango said about the years after 1975', '2008-06-11 · PRIVATE', 452],
   ];
   const body = [
-    shell({ url: 'puong.dev/trees/t1/search?q=nguyen&page=2', active: 'My trees', H }),
-    crumb('My trees / Nguyễn family / search'),
+    shell({ url: 'puong.dev/trees/t1/search?q=mango&page=1', active: 'My trees', H }),
+    crumb('My trees / Mango family / search'),
     T(24, 136, 'Search', { size: 22, weight: 700 }),
     T(24, 172, 'Name, nickname or memory text', { size: 12.5, weight: 600 }),
     BOX(24, 180, 440, 32, { fill: '#ffffff' }),
-    T(34, 201, 'nguyen', { size: 12.5 }),
-    T(24, 234, 'Accent-insensitive: “nguyen” finds “Nguyễn”.', {
+    T(34, 201, 'mango', { size: 12.5 }),
+    T(24, 234, 'Case- and accent-insensitive: “mango” finds “Mr. Mango”, “hoi an” finds “Hội An”.', {
       size: 11.5,
       fill: MUTED,
       italic: true,
     }),
-    T(24, 268, '8 results, page 2 of 2', { size: 12, fill: MUTED }),
+    T(24, 268, '4 results, page 1 of 1', { size: 12, fill: MUTED }),
     ...rows.flatMap(([kind, title, detail, y]) => [
       BOX(24, y, 912, 64, { fill: '#ffffff' }),
       T(40, y + 28, kind, { size: 10, fill: MUTED, weight: 600 }),
       T(140, y + 28, title, { size: 13.5, weight: 600 }),
       T(140, y + 48, detail, { size: 11.5, fill: MUTED }),
     ]),
-    BOX(24, 476, 100, 32, { fill: '#ffffff' }),
-    T(74, 497, '‹ Previous', { size: 12, anchor: 'middle' }),
-    BOX(136, 476, 76, 32, { fill: '#ffffff' }),
-    T(174, 497, 'Next ›', { size: 12, anchor: 'middle' }),
+    BOX(24, 536, 100, 32, { fill: '#f4efe7', stroke: RULE }),
+    T(74, 557, '‹ Previous', { size: 12, anchor: 'middle', fill: MUTED }),
+    BOX(136, 536, 76, 32, { fill: '#f4efe7', stroke: RULE }),
+    T(174, 557, 'Next ›', { size: 12, anchor: 'middle', fill: MUTED }),
+    T(256, 557, 'greyed out on the only page — ?page= still rides in the URL', {
+      size: 11.5,
+      fill: MUTED,
+      italic: true,
+    }),
     DOT(318, 15, 1),
-    DOT(340, 230, 2),
+    DOT(596, 230, 2),
     DOT(920, 280, 3),
-    DOT(920, 352, 4),
-    DOT(228, 492, 5),
+    DOT(920, 484, 4),
+    DOT(234, 552, 5),
   ].join('\n');
   page('search', H, body, 'Wireframe — search (/trees/:treeId/search)');
 }

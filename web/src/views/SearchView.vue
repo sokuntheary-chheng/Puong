@@ -112,7 +112,7 @@ function onRetry(): void {
       v-model="draft"
       type="search"
       name="q"
-      placeholder="e.g. nguyen"
+      placeholder="e.g. hoi an"
       @input="onInput"
     />
 
@@ -124,7 +124,7 @@ function onRetry(): void {
       class="hint"
     >
       Type a name, a nickname, or a word from a memory. Accent-insensitive:
-      “nguyen” finds “Nguyễn”.
+      “hoi an” finds “Hội An”.
     </p>
 
     <AsyncState

@@ -345,9 +345,9 @@ The application ships with three seeded accounts, one per role, so that the acce
 
 | Role | Email | Password | Access |
 |---|---|---|---|
-| Owner | `owner@puong.dev` | `Passw0rd!` | Owner of the Nguyễn tree and the Trần tree |
-| Contributor | `contributor@puong.dev` | `Passw0rd!` | Contributor in the Nguyễn tree; not a member of the Trần tree |
-| Viewer | `viewer@puong.dev` | `Passw0rd!` | Viewer in the Nguyễn tree; invited but not accepted in the Trần tree |
+| Owner | `owner@puong.dev` | `Passw0rd!` | Owner of the Mango family tree and the Mangosteen family tree |
+| Contributor | `contributor@puong.dev` | `Passw0rd!` | Contributor in the Mango family tree; not a member of the Mangosteen family tree |
+| Viewer | `viewer@puong.dev` | `Passw0rd!` | Viewer in the Mango family tree; invited but not accepted in the Mangosteen family tree |
 
 The seed also creates a four-generation tree of about 22 people with shared and private memories and several deliberately incomplete profiles, so that the tree view, the filters and the "needs details" count are meaningful on a fresh start.
 

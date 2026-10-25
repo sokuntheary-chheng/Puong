@@ -76,12 +76,12 @@ check(
 
 /* ---------- search: accent-insensitive ---------- */
 
-const r1 = await search({ treeId: 't1', query: 'nguyen', page: 1, viewerId: 'u1' });
-check(r1.total > 0, '"nguyen" matches "Nguyễn …" without the diacritic', `total ${r1.total}`);
+const r1 = await search({ treeId: 't1', query: 'hoi an', page: 1, viewerId: 'u1' });
+check(r1.total > 0, '"hoi an" matches "Hội An …" without the diacritic', `total ${r1.total}`);
 
-const r2 = await search({ treeId: 't1', query: 'NGUYEN VAN AN', page: 1, viewerId: 'u1' });
+const r2 = await search({ treeId: 't1', query: 'HOI AN', page: 1, viewerId: 'u1' });
 check(
-  r2.items.some((x) => x.kind === 'person' && x.person.fullName === 'Nguyễn Văn An'),
+  r2.items.some((x) => x.kind === 'person' && x.person.fullName === 'Mr. Mango'),
   'an all-caps query without diacritics finds the exact person',
 );
 

@@ -71,7 +71,7 @@ The numbered discs on each sheet are keyed to the notes below.
 4. **Selected card** — accent outline and `aria-pressed`, so the selection is visible to a
    screen reader, not only to the eye.
 5. **"not linked yet"** — a person with no relations at all. Story 5 exists to fix exactly
-   this, and person `p23` (Hoàng Thị Bé) is the fixture that keeps the flag from being
+   this, and person `p23` (Apple Bottom) is the fixture that keeps the flag from being
    dead code.
 6. **Role line** — FR-3.6. A viewer sees *"you can read, not write"* here and is not
    offered any write control anywhere on the screen.
@@ -127,7 +127,7 @@ The numbered discs on each sheet are keyed to the notes below.
    link does not reproduce it, and a refresh must not lose the results
    (`design.md` §3). Typing rewrites the URL with `replace`, so one entry per keystroke
    does not bury the back button.
-2. **Accent- and case-insensitive matching** — "nguyen" finds "Nguyễn". A Vietnamese name
+2. **Accent- and case-insensitive matching** — "hoi an" finds "Hội An". A Vietnamese name
    typed on a keyboard without diacritics has to be findable, or the search does not work
    for the family it is for.
 3. **A result opens the person it belongs to.** A memory has no page of its own yet, so

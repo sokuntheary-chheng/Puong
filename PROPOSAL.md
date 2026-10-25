@@ -176,7 +176,7 @@ Seeded by `prisma/seed.ts` and documented in the README.
 
 | Role        | Email                   | Password    | Access                                                   |
 | ----------- | ----------------------- | ----------- | -------------------------------------------------------- |
-| Owner       | `owner@puong.dev`       | `Passw0rd!` | Owner of tree 1 (Nguyễn family) and tree 2 (Trần family) |
+| Owner       | `owner@puong.dev`       | `Passw0rd!` | Owner of tree 1 (Mango family) and tree 2 (Mangosteen family) |
 | Contributor | `contributor@puong.dev` | `Passw0rd!` | Contributor in tree 1, **not a member of tree 2**        |
 | Viewer      | `viewer@puong.dev`      | `Passw0rd!` | Viewer in tree 1, invited (not yet accepted) in tree 2   |
 
