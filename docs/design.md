@@ -241,7 +241,7 @@ Six screens, six routes — two with a route parameter.
 | Route | Screen | Route param | Component | M1 checklist item |
 |---|---|---|---|---|
 | `/login` | Login | — | `LoginView.vue` | — |
-| `/` | Home — my trees | — | `HomeView.vue` | — |
+| `/` | Home — my trees, or straight into the workspace when the member has exactly one active tree | — | `HomeView.vue` | — |
 | `/trees/:treeId` | Tree view | `treeId` | `TreeViewView.vue` | **detail page with a route parameter** |
 | `/trees/:treeId/people/:personId` | Person page | `treeId`, `personId` | `PersonView.vue` | second route parameter |
 | `/trees/:treeId/people/:personId/memories/new` | Memory form | `treeId`, `personId` | `MemoryFormView.vue` | **form with client-side validation** |

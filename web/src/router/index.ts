@@ -1,4 +1,27 @@
+import { watch } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
+import type { RouteLocationRaw } from 'vue-router';
+import { useTreesStore } from '../stores/trees';
+
+/**
+ * What "/" means for the member who is signed in.
+ *
+ * One active tree is not a list — it is somewhere to go, so "/" opens that
+ * tree's workspace. The list is drawn when there is a choice to make
+ * instead: no trees at all, or more than one.
+ *
+ * "Not known yet" deliberately answers `true`. The view behind "/" is the
+ * view that fetches the list, so letting the route enter keeps its loading
+ * and its error state working exactly as they did; this then decides the
+ * moment there is something to decide with.
+ */
+function homeEntry(): true | RouteLocationRaw {
+  const store = useTreesStore();
+  const only = store.trees.data.length === 1 ? store.trees.data[0] : undefined;
+
+  if (store.trees.status !== 'ready' || only === undefined) return true;
+  return { name: 'tree', params: { treeId: only.id } };
+}
 
 /**
  * M1 item 3 — six routes, two of them parameterised.
@@ -25,6 +48,7 @@ const router = createRouter({
       name: 'home',
       component: () => import('../views/HomeView.vue'),
       meta: { title: 'My trees' },
+      beforeEnter: homeEntry,
     },
     {
       path: '/trees/:treeId',
@@ -67,6 +91,35 @@ const router = createRouter({
 router.afterEach((to) => {
   const title = to.meta.title as string | undefined;
   document.title = title ? `${title} · Puong` : 'Puong';
+});
+
+/*
+ * `homeEntry` runs when "/" is *entered*. The list can also change while
+ * "/" is already showing: the M1 account switcher changes who is signed in
+ * without navigating anywhere, and the store refetches for the new member.
+ * So the same decision is taken again for as long as "/" is the screen on
+ * show — and stopped the moment it is not, so no watcher outlives the route
+ * it is watching.
+ */
+let stopWatchingHome: (() => void) | null = null;
+
+router.afterEach((to) => {
+  if (stopWatchingHome !== null) {
+    stopWatchingHome();
+    stopWatchingHome = null;
+  }
+  if (to.name !== 'home') return;
+
+  const store = useTreesStore();
+  stopWatchingHome = watch(
+    () => [store.trees.status, store.trees.data] as const,
+    () => {
+      const entry = homeEntry();
+      if (entry !== true && router.currentRoute.value.name === 'home') {
+        void router.replace(entry);
+      }
+    },
+  );
 });
 
 export default router;
