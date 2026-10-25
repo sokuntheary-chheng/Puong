@@ -5,7 +5,7 @@ import { useSessionStore } from './session';
 import { createAsync, run } from './asyncState';
 
 /**
- * Memories of one person.
+ * Memories of one person, and of the tree that person belongs to.
  *
  * FR-6.6 is enforced in the service, not here: the API is handed the viewer
  * and returns only what that viewer may see, so a view cannot accidentally
@@ -22,6 +22,20 @@ export const useMemoriesStore = defineStore('memories', () => {
   async function fetchFor(treeId: string, personId: string): Promise<void> {
     await run(list, () =>
       listMemories(treeId, { personId, viewerId: session.currentUserId }),
+    );
+  }
+
+  /**
+   * Every memory in the tree this viewer is allowed to see — the tree view's
+   * memory count and its Memories tab.
+   *
+   * Same endpoint, same FR-6.6 filtering, only without the person scope: the
+   * service drops a PRIVATE memory that is not the viewer's either way, so a
+   * count drawn here can never reveal that a private memory exists.
+   */
+  async function fetchForTree(treeId: string): Promise<void> {
+    await run(list, () =>
+      listMemories(treeId, { viewerId: session.currentUserId }),
     );
   }
 
@@ -72,5 +86,5 @@ export const useMemoriesStore = defineStore('memories', () => {
     created.status = 'idle';
   }
 
-  return { list, created, fetchFor, create, clearCreated };
+  return { list, created, fetchFor, fetchForTree, create, clearCreated };
 });
