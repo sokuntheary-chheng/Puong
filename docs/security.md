@@ -9,9 +9,10 @@ Verification referenced below:
 
 | Command | What it runs |
 |---|---|
-| `cd api && npm run check` | `scripts/check-api.cjs` — 184 assertions against a running, seeded API |
-| `cd api && npm run test:e2e` | Supertest suite — 9 tests, including the session/cookie suite |
+| `cd api && npm run check` | `scripts/check-api.cjs` — 192 assertions against a running, seeded API (safe to re-run: three consecutive runs pass) |
+| `cd api && npm run test:e2e` | Supertest suite — 13 tests: error contract, session/cookie, revocation, rate limiting |
 | `cd api && npm run lint && npm run typecheck && npm run build` | static gate |
+| `cd api && npm audit` | dependency advisories — **0 vulnerabilities**, prod and dev |
 | `cd web && npm run lint && npm run typecheck && npm run check && npm run build` | static gate + 36 service-layer assertions over the HTTP client |
 
 ---
@@ -56,6 +57,76 @@ anybody should have to notice:
 3. The cookie carries no readable token and no `GET` has a side effect, so
    there is nothing to replay silently.
 
+### Rate limiting on the routes that create a session
+
+Two limits, aimed differently on purpose:
+
+| Route | Limit | Where |
+|---|---|---|
+| `POST /api/auth/register` | **10 requests/minute** per address, every request counted | `@Throttle` on the route (`auth.controller.ts`) |
+| `POST /api/auth/login` | **10 failed sign-ins/minute** per address — a success never spends it | `LoginThrottle` (`auth/login-throttle.service.ts`) |
+| everything else | **600 requests/minute** per address per route, a backstop rather than a policy | `ThrottlerModule` + `APP_GUARD ThrottlerGuard` (`app.module.ts`) |
+
+Counting *failures* on login is the reason `LoginThrottle` exists instead of a
+second decorator: a member signing in on a second device, or
+`scripts/check-api.cjs` signing in as the whole demo family, is not an attack
+and should not be charged against a dictionary-attack budget. An attacker
+gains nothing from the distinction — they only ever get to try passwords that
+fail. The check runs *before* `bcrypt.compare`, so a blocked address is not
+handed CPU to burn and cannot use response time as an account-existence oracle.
+
+The throttler guard is registered ahead of `AuthGuard`, so the limit is
+counted before the session is read; `check-api.cjs` asserts `X-RateLimit-Limit`
+and `X-RateLimit-Remaining` **on a 401**, which is only true if that ordering
+holds. Counter keys include the route name, so ten failed sign-ins cannot eat
+`GET /api/trees`'s budget.
+
+The key is the caller's address. Behind nginx every request arrives from the
+proxy, so `TRUST_PROXY=true` (set in `docker-compose.yml`, off by default in
+`.env.example`) makes Express read `X-Forwarded-For` — which nginx sets on
+`/api/`. Left off when the API is reachable directly, because that header is
+then one the client writes for itself, and a limit whose key the caller picks
+is no limit.
+
+Evidence:
+
+```text
+$ for i in $(seq 1 11); do curl -o /dev/null -w "%{http_code}\n" -X POST .../api/auth/login; done
+401 401 401 401 401 401 401 401 401 401 429
+$ curl -i -X POST .../api/auth/login
+HTTP/1.1 429 Too Many Requests
+Retry-After: 60
+{"statusCode":429,"message":["Too many requests. Wait a moment and try again."],"error":"Too Many Requests"}
+# while login is blocked, the rest of the API is not:
+GET /api/users → 401   GET /api/auth/me → 401   POST /api/auth/register → 201
+```
+
+The e2e suite asserts the same two facts (the eleventh attempt is a 429 in the
+standard body; every other route still answers its normal status).
+
+### Logout revokes the session server-side
+
+The cookie being cleared only clears *this browser's* copy, so `logout` also
+stamps `User.sessionRevokedAt`, and `AuthGuard` reads that column after the
+signature verifies: any token issued at or before the stamp is refused with
+**401** and its cookie is cleared, no matter how valid its signature is. A new
+sign-in has a later timestamp, so it works — which the e2e suite proves by
+logging straight back in after a logout.
+
+Getting that comparison right needed a millisecond. JWT's `iat` counts whole
+seconds, so a sign-out at `10:00:00.900` and a re-login at `10:00:00.950` land
+on the same value, and one of two things must give: either an immediate re-login
+is condemned to a session that stays dead for seven days, or a token issued in
+that same second survives the sign-out. `issueToken` therefore writes an
+`iatMs` claim and the guard compares that — the sign-out kills exactly the
+tokens issued before it. A token with neither field is refused rather than
+given the benefit of the doubt.
+
+Evidence: e2e `Session (e2e)` (revoked cookie → 401 with the clearing header,
+fresh login → 200) and `check-api.cjs` (`the token logout revoked is refused,
+even though its signature still verifies` → 401, then `login after logout → a
+new session that works` → 200).
+
 ### SQL injection
 
 Every query goes through Prisma's query builder. There is no `$queryRaw`,
@@ -99,7 +170,7 @@ from the session, so there is no field left to claim even in principle.
 - **404 over 403** for things you were never meant to know exist: a tree you
   are not a member of, and another person's `PRIVATE` memory.
 
-Every branch of that is asserted from the API side (184 assertions across
+Every branch of that is asserted from the API side (192 assertions across
 all six roles × every endpoint) and the browser side cannot get around it,
 because the client sends no identity at all.
 
@@ -117,31 +188,78 @@ Prisma's own messages (column names on a unique violation) are mapped to a
 409 with a human sentence, and nothing about the schema is echoed on an
 unexpected failure.
 
+### Security headers: helmet on the API, a CSP on the document
+
+Two policies, because there are two things being defended, and they are kept
+apart deliberately so that no response ever carries two:
+
+- **API responses** (`helmet()` in `api/src/main.ts`): a CSP of
+  `default-src 'self'` with `object-src 'none'` and `connect-src 'self'`,
+  plus `X-Content-Type-Options: nosniff`, `X-Frame-Options`, `Referrer-Policy:
+  no-referrer`, `Cross-Origin-Opener-Policy`/`Cross-Origin-Resource-Policy:
+  same-origin`. The API answers JSON, so a policy allowing only its own origin
+  costs nothing and closes the "could a value I reflect end up as script"
+  question for every response. One directive is relaxed on purpose —
+  `script-src` allows `'unsafe-inline'` on this origin so Swagger UI's own
+  bootstrap runs; the contract it documents is public and every mutating route
+  still needs a session.
+- **The document and its assets** (`web/nginx.conf`, `location /`): a CSP with
+  `script-src 'self'` (no inline script, no CDN, no `eval:`), `img-src 'self'
+  data: https:` for `photoUrl`, `object-src 'none'`, `frame-ancestors 'none'`,
+  plus `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` and
+  `nosniff`. It lives inside `location /` rather than at `server` level so
+  `/api/` responses keep exactly one policy — the API's.
+
+Evidence: `check-api.cjs` asserts the CSP, `nosniff`, `X-Frame-Options` and
+`Referrer-Policy` **on a 401** (a header set only on the happy path protects
+nobody), and `X-RateLimit-*` on the same response. Swagger still works under
+the policy: `/api/docs` answers 200 HTML and `/api/docs/json` answers 200 with
+all 18 paths.
+
+### Dependency advisories: 0
+
+`api/package.json` pins the three transitive chains that produced the seven
+advisories through `overrides` — the packages that *depended* on the vulnerable
+versions are unchanged, so nothing was upgraded past its major:
+
+```json
+"overrides": {
+  "multer": "^2.5.0",
+  "deepmerge-ts": "^8.0.2",
+  "@nestjs/swagger": { "js-yaml": "^5.5.0" }
+}
+```
+
+`npm audit` reports **0 vulnerabilities** with and without dev dependencies
+(`web/` reports 0 too). `npx prisma validate`, `npm run seed`, `npm run build`
+and the full check suite all still pass with multer 2.5.0 and js-yaml 5.5.0
+installed — the overrides were verified, not just written down.
+
 ---
 
 ## Listed — known, accepted for this milestone
 
 These are recorded rather than fixed, with the reason each one is defensible
 at week 9. None of them is a hole the checklist calls a must-fix for a class
-demo; each one becomes work before M5.
+demo; each one becomes work before M5. Rate limiting, session revocation,
+helmet/CSP and the dependency advisories were in this table until they were
+fixed above — the rows below are what actually remains.
 
 | # | Finding | Why it is listed here | What closes it |
 |---|---|---|---|
-| 1 | **No rate limiting** on `/auth/login` or anywhere else — a password can be tried indefinitely. | No throttler is wired up, and adding one is a small, self-contained change that should not be rushed into a graded milestone the day before submission. | `@nestjs/throttler` on the auth routes (e.g. 5 attempts/minute per IP), plus an exponential backoff. |
-| 2 | **No account lockout and no password policy** beyond a minimum length. | Same reason as 1; lockout is also an availability weapon (lock a victim out by design). | Lockout or CAPTCHA after N failures; a length + breach-password check on register. |
-| 3 | **Logout does not revoke the token server-side.** The cookie is cleared and the JWT stays technically valid until it expires. | The JWT is only ever in an `httpOnly` cookie with `SameSite=Strict`, so "stolen" means a same-origin script or a physical machine — and the lifetime is 7 days. | A `jti`/`iat` denylist checked by the guard, or a short-lived access token plus a refresh token. |
-| 4 | **`docker-compose.yml` ships a placeholder `JWT_SECRET` default.** The value is committed, but it is `replace-me-before-this-leaves-your-machine` — it is a *default*, not a secret. | The API refuses to start without a secret when the variable is absent, and the real value lives in a gitignored `.env`. Still: a default that happens to work is a default somebody will ship. | Fail the compose file without an explicit `JWT_SECRET` (`${JWT_SECRET:?set me}`) so a run cannot silently use the placeholder. |
-| 5 | **`npm audit --omit=dev` reports 7 advisories (2 moderate, 5 high)** in `api/`. | Every one is transitive and none is reachable from a route this app exposes: `multer` (no file upload exists — `photoUrl` is a URL string), `deepmerge-ts`/`prisma` (needs Prisma 7, a major), `js-yaml` (needs `@nestjs/swagger` 12, a major). `web/` reports 0. | Take the major upgrades deliberately, or drop the unused multer dependency path. |
-| 6 | **No `helmet`, no CSP, no security headers.** | The SPA is served by nginx and Vite with no third-party scripts, no inline `eval`, and no user-supplied HTML — so there is little for a CSP to defend against *yet*, and a strict CSP built without testing tends to break the app silently. | `@nestjs/helmet` on the API and a `Content-Security-Policy` on the nginx server block, tested against the demo flow. |
-| 7 | **Swagger is exposed at `/api/docs` in every environment.** | It documents a contract that is already public and every mutating route still needs a session; hiding it is a one-line guard. | `@ApiBearerAuth`-style guard or an env flag that disables the document outside development. |
-| 8 | **The cookie is not `Secure` on `http://localhost`.** | A `Secure` cookie is *dropped* by the browser on plain http, which would break every request in development. `COOKIE_SECURE` exists exactly so the two situations are a config apart, not a code change. | `COOKIE_SECURE=true` wherever the API is reached over TLS (M5). |
+| 1 | **No account lockout and no password policy** beyond a minimum length. | The rate limiter takes the edge off guessing (10 failures/minute/address) without the availability risk of lockout, which is a weapon: lock a victim out by design. | Lockout or CAPTCHA after N failures; a length + breach-password check on register. |
+| 2 | **`docker-compose.yml` ships a placeholder `JWT_SECRET` default.** The value is committed, but it is `replace-me-before-this-leaves-your-machine` — it is a *default*, not a secret. | The API refuses to start without a secret when the variable is absent, and the real value lives in a gitignored `.env`. Still: a default that happens to work is a default somebody will ship. | Fail the compose file without an explicit `JWT_SECRET` (`${JWT_SECRET:?set me}`) so a run cannot silently use the placeholder. |
+| 3 | **Swagger is exposed at `/api/docs` in every environment.** | It documents a contract that is already public and every mutating route still needs a session; hiding it is a one-line guard. | `@ApiBearerAuth`-style guard or an env flag that disables the document outside development. |
+| 4 | **The cookie is not `Secure` on `http://localhost`.** | A `Secure` cookie is *dropped* by the browser on plain http, which would break every request in development. `COOKIE_SECURE` exists exactly so the two situations are a config apart, not a code change. | `COOKIE_SECURE=true` wherever the API is reached over TLS (M5). |
+| 5 | **Rate-limit counters are per process.** `LoginThrottle` is a `Map` and `@nestjs/throttler`'s default storage is in memory, so a restart resets them and a second replica would keep its own. | This stack runs one API instance behind one nginx, and the counters are correct for exactly that deployment. A shared store is infrastructure, not a patch. | `ThrottlerStorageRedis` (or equivalent) for the throttler and a shared store for the sign-in limiter, before scaling past one replica. |
 
 ---
 
 ## Not applicable
 
 - **File upload limits** — there is no upload. `photoUrl` is a validated URL
-  string, so the multer advisories above have no route to fire on.
+  string, so the multer advisory had no route to fire on even before the
+  `overrides` entry pinned it away.
 - **Session fixation** — the session value is issued by the server on login
   and is not derived from anything the client sends.
 - **CORS misconfiguration** — one origin from the environment,

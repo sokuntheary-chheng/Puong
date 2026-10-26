@@ -68,6 +68,16 @@ model User {
   displayName  String
   createdAt    DateTime @default(now())
 
+  /// Server-side sign-out (M3).
+  ///
+  /// A signed JWT cannot be recalled, so logout stamps this instead: every
+  /// token issued at or before this instant is refused by `AuthGuard`, no
+  /// matter how valid its signature is. Signing in *after* it produces a
+  /// later `iat`, which is why a new session still works. Without this
+  /// column "log out" would only mean "drop the cookie the browser happens
+  /// to be holding", and a copy taken earlier would live for seven days.
+  sessionRevokedAt DateTime?
+
   /// The trees this user created. A tree keeps its owner even if the owner
   /// leaves the family story, so the relation is restrictive rather than
   /// cascading: there is deliberately no delete-user endpoint in M2.

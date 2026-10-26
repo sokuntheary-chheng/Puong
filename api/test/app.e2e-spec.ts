@@ -256,4 +256,132 @@ describe('Session (e2e)', () => {
     expect(raw).toContain('puong_session=;');
     expect(raw.toLowerCase()).toContain('expires=thu, 01 jan 1970');
   });
+
+  /**
+   * Signing out has to reach the server, not just the browser's cookie jar.
+   *
+   * `session` is the cookie issued before the logout above: its signature is
+   * still valid and it has not expired, so the only thing that can refuse it
+   * is the revocation stamp `logout` wrote. Without server-side revocation
+   * this test would pass a client that merely deleted its own cookie while a
+   * copy of the token kept working for the rest of its seven days.
+   */
+  it('refuses the token that logout revoked, even though its signature is valid', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/auth/me')
+      .set('Cookie', session)
+      .expect(401);
+
+    const body = response.body as ErrorBody;
+    expect(body.statusCode).toBe(401);
+    expect(body.message).toEqual(['Your session has expired. Sign in again.']);
+    // The server tells the browser to drop the now-worthless cookie too.
+    expect(rawSessionCookie(response.headers['set-cookie'])).toContain(
+      'puong_session=;',
+    );
+  });
+
+  /**
+   * Signing back in still works after the revocation: `sessionRevokedAt` is
+   * a line in time, and a token issued after it has a later `iat`.
+   */
+  it('issues a fresh session after a revoked one', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email, password })
+      .expect(200);
+
+    const fresh = cookieHeader(response.headers['set-cookie']);
+    expect(fresh).toContain('puong_session=');
+
+    await request(app.getHttpServer())
+      .get('/api/auth/me')
+      .set('Cookie', fresh)
+      .expect(200);
+  });
+});
+
+/**
+ * Rate limiting (M3), on its own application so the counter starts empty.
+ *
+ * The limit protects the routes that answer a password: `login` and
+ * `register` each drop from 600 a minute to ten. Two things are being
+ * proved here, because the second is the one that goes wrong quietly:
+ *
+ * 1. the eleventh sign-in attempt inside a minute is a 429 in the standard
+ *    error body, and
+ * 2. exhausting that limit does **not** touch the rest of the API — `GET
+ *    /api/trees` still answers 401 rather than 429, because the guard keys
+ *    every counter by route as well as by address. One shared counter would
+ *    let a login loop lock a member out of browsing their own tree.
+ */
+describe('Rate limiting (e2e)', () => {
+  let app: INestApplication<App>;
+  const email = `throttle-${Date.now()}@puong.dev`;
+  const password = 'Passw0rd!';
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api');
+    app.use(cookieParser());
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+        forbidUnknownValues: true,
+      }),
+    );
+    app.useGlobalFilters(new ApiExceptionFilter());
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('answers the eleventh sign-in attempt in a minute with 429', async () => {
+    // Ten attempts at an account that does not exist: every one is a real
+    // guess against the password, which is exactly what the limit counts.
+    for (let attempt = 1; attempt <= 10; attempt += 1) {
+      await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email, password })
+        .expect(401);
+    }
+
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email, password })
+      .expect(429);
+
+    const body = response.body as ErrorBody;
+    expect(body.statusCode).toBe(429);
+    expect(body.message).toEqual([
+      'Too many requests. Wait a moment and try again.',
+    ]);
+    expect(body.error).toBe('Too Many Requests');
+  });
+
+  it('keeps the rest of the API open while sign-in is throttled', async () => {
+    // Still throttled on the route that ran out…
+    await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email, password })
+      .expect(429);
+
+    // …and nowhere else. `register` has its own counter, so a rejected body
+    // still reaches validation (400) instead of the limiter (429); the
+    // guarded routes answer their normal 401.
+    await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({ email, displayName: 'Blocked', password: 'short' })
+      .expect(400);
+    await request(app.getHttpServer()).get('/api/trees').expect(401);
+    await request(app.getHttpServer()).get('/api/auth/me').expect(401);
+  });
 });

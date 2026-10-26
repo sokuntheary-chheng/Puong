@@ -71,6 +71,18 @@ export class ApiExceptionFilter implements ExceptionFilter {
       );
     }
 
+    /* A 429 tells the caller when to come back. The throttler has already
+       written its own, precise `Retry-After` onto the response before
+       throwing; this fills in the round number for the sign-in limiter,
+       whose window is a minute. Setting a header that is already there
+       would replace a better answer with a worse one. */
+    if (
+      body.statusCode === 429 &&
+      response.getHeader('Retry-After') === undefined
+    ) {
+      response.set('Retry-After', '60');
+    }
+
     response.status(body.statusCode).json(body);
   }
 
@@ -99,6 +111,19 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
   private fromHttpException(exception: HttpException): ErrorBody {
     const status = exception.getStatus();
+
+    /* Rate limiting arrives from `@nestjs/throttler`, whose message is
+       `"ThrottlerException: Too Many Requests"` — a class name pasted into a
+       sentence a person will read. The status and the three-field shape are
+       the contract; the words are ours to choose. */
+    if (status === 429) {
+      return {
+        statusCode: 429,
+        message: ['Too many requests. Wait a moment and try again.'],
+        error: STATUS_CODES[429] ?? 'Too Many Requests',
+      };
+    }
+
     const raw = exception.getResponse();
     const text =
       typeof raw === 'string'

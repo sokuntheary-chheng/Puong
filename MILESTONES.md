@@ -15,12 +15,17 @@ Status of the milestones so far:
 
 | Milestone | Week | State | Tag |
 |---|---|---|---|
-| M0 Proposal | 3 | complete | `m0` — **not created yet** |
-| M1 Frontend prototype | 5 | complete | `m1` — **not created yet** |
-| M2 Backend API | 7 | complete | `m2` — **not created yet** |
+| M0 Proposal | 3 | complete | `m0` → `85a82d6` |
+| M1 Frontend prototype | 5 | complete | `m1` → `1bd5a7f` |
+| M2 Backend API | 7 | complete | `m2` → `4955663` |
 | M3 Integrated app | 9 | complete | `m3` |
 | M4 Feature complete | 12 | not started | `m4` |
 | M5 Deployed | 14 | not started | `m5` |
+
+All four existing tags are annotated and **local only** — nothing has been
+pushed (`git tag -l` to list them, `git rev-parse 'm3^{commit}'` to resolve
+one). The working branch is `m3-work`, so the ref `m3` names the tag alone
+and `git show m3` needs no disambiguating.
 
 ---
 
@@ -180,8 +185,8 @@ side.
       `TreeRoleGuard` + `@RequireRole(VIEWER|CONTRIBUTOR|OWNER)` per tree; ownership checked
       against the loaded row (memory author, person creator, your own account row). 404 for
       "not a member / not yours to see", 403 for "member, but not enough" —
-      see `docs/api.md` → *401 vs 403 vs 404*. Evidence: `npm run check` → **184 passed**,
-      `npm run test:e2e` → **9 passed**, both green twice in a row
+      see `docs/api.md` → *401 vs 403 vs 404*. Evidence: `npm run check` → **192 passed**,
+      `npm run test:e2e` → **13 passed**, both green three times in a row
 - [x] Route guards in Vue; the UI hides what a role cannot do
       — `router.beforeEach` awaits the memoised `session.restore()` (`GET /auth/me`), sends
       signed-out visitors to `/login?next=…`, bounces signed-in ones away from it, and
@@ -192,10 +197,15 @@ side.
 - [x] Security checklist from week 9 run on your app; findings fixed or listed
       — **`docs/security.md`**: fixed = hashing, enumeration-safe login, `HttpOnly` +
       `SameSite=Strict` cookie, Origin check, no raw SQL, no `v-html`, whitelist validation,
-      full access-control matrix, secrets out of Git, fixed 500 message. Listed = no rate
-      limiting, no lockout, no server-side revocation, the compose placeholder for
-      `JWT_SECRET`, 7 transitive `npm audit` advisories, no helmet/CSP, Swagger open, no
-      `Secure` on localhost — each with why it is acceptable now and what closes it
+      full access-control matrix, secrets out of Git, fixed 500 message, **rate limiting**
+      (10 failed sign-ins a minute on `login`, 10 registrations a minute, a 600/minute
+      backstop on every route), **server-side logout revocation** (`User.sessionRevokedAt`
+      read by `AuthGuard`, compared against a millisecond `iatMs` so signing straight back in
+      still works), **helmet on the API + a CSP on the document in nginx**, and **0
+      `npm audit` advisories** (three `overrides`, prod and dev). Listed = no lockout or
+      password policy, the compose placeholder for `JWT_SECRET`, Swagger open in every
+      environment, no `Secure` on localhost, rate-limit counters that live in one process —
+      each with why it is acceptable now and what closes it
 - [ ] 3-minute demo in the practice session
       — the only item that is not a file: it is given live. The walkthrough below is the
       script it follows, and every step in it was rehearsed against the running app
@@ -231,12 +241,9 @@ left alone there — the API compares `Origin` with `Host` on every unsafe metho
 that ignores `SameSite`) and closed by a second, server-side rule rather than by trusting
 the browser.
 
-**3. What is given up: revocation, and scope.** Three costs, all listed in
+**3. What is given up — and what no longer is.** Two costs remain, both listed in
 `docs/security.md`:
 
-- **The token cannot be invalidated on demand.** Logout clears the cookie; the signed value
-  stays valid until it expires. Nothing else stores it, so "sign out everywhere" does not
-  exist. A denylist (or short-lived tokens + refresh) would close it.
 - **It travels with every same-origin request**, including any future endpoint that does
   not need it — a cookie has no per-route opt-in the way an `Authorization` header does.
   The global `AuthGuard` is the compensating control.
@@ -245,6 +252,16 @@ the browser.
   a copy of the key. That is the honest boundary of this choice — it protects against
   exfiltration and CSRF, it does not protect against an attacker who is already executing
   script in your origin.
+
+**Revocation was the third cost, and it is closed rather than argued away.** A signed JWT
+cannot be un-signed, so `POST /auth/logout` stamps `User.sessionRevokedAt` and `AuthGuard`
+refuses every token issued at or before that instant: the copy somebody kept becomes a
+**401** with its cookie cleared, while a sign-in *after* the stamp works normally. The
+comparison runs on an `iatMs` claim written at sign-in because JWT's own `iat` counts whole
+seconds — with seconds, a sign-out at `.900` and a re-login in the same second are the same
+number, and it would be the honest user's brand-new session that stayed dead for seven
+days. Both halves are tested: e2e asserts the revoked cookie is refused and that a fresh
+login after it works.
 
 The design question behind it is therefore not "cookie or `localStorage`" but *what do you
 want an XSS bug to cost you*. Here the answer is: the tab it runs in, not the account for
@@ -263,8 +280,9 @@ the next seven days.
    cannot deactivate themselves (409).
 5. **Route guard** (20 s) — sign out on a deep link → `/login?next=…`, sign back in →
    returned to where you were.
-6. **Security checklist** (30 s) — `docs/security.md` on screen: the fixed table, then the
-   listed table, ending with the 7 `npm audit` advisories and why each is transitive.
+6. **Security checklist** (30 s) — `docs/security.md` on screen: the fixed table (11 failed
+   sign-ins → `429` with `Retry-After`, a logged-out cookie → `401`, `npm audit` → 0), then
+   the listed table and what closes each of the five rows.
 
 ---
 

@@ -2,12 +2,45 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  /**
+   * Security headers, before anything that could send a body.
+   *
+   * The CSP is the one that matters: this API answers JSON, so a policy that
+   * allows its own origin and nothing else costs nothing and removes the
+   * "what if a value I reflect ends up in a page" question from every
+   * response. `frame-ancestors` (via helmet's defaults) refuses to be framed,
+   * which is the clickjacking half; `X-Content-Type-Options: nosniff`
+   * refuses to let a browser guess that a JSON document is something else.
+   *
+   * One directive is relaxed on purpose: Swagger UI is served from this same
+   * origin and needs to run its own inline bootstrap script. It is a
+   * documentation page for an API whose contract is already public, and
+   * blocking it would be a header that looks strict while teaching people to
+   * disable headers.
+   */
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          'script-src': ["'self'", "'unsafe-inline'"],
+          'connect-src': ["'self'"],
+        },
+      },
+      /* The SPA and the API share an origin behind nginx, and the API never
+         serves a cross-origin image, font or iframe of its own. */
+      crossOriginResourcePolicy: { policy: 'same-origin' },
+    }),
+  );
 
   /**
    * The session arrives as a cookie, so the request has to have one before
@@ -20,6 +53,23 @@ async function bootstrap(): Promise<void> {
   const config = app.get(ConfigService);
   const port = config.get<number>('PORT', 3000);
   const origin = config.get<string>('CORS_ORIGIN', 'http://localhost:5173');
+
+  /**
+   * Who the API thinks is calling — the key every rate limit is counted by.
+   *
+   * Behind nginx all requests arrive from the proxy's own address, so
+   * `req.ip` would name one address for the whole deployment and both the
+   * throttler (`app.module.ts`) and `LoginThrottle` would limit *deployments*
+   * instead of people. `trust proxy` makes Express take the client from
+   * `X-Forwarded-For`, which `web/nginx.conf` sets on `/api/`.
+   *
+   * It is off unless asked for, on purpose: if the API can be reached
+   * directly, that header is one a client writes for itself, and a limit
+   * whose key the caller chooses is no limit at all. Enable it only when the
+   * proxy is the sole way in — which is what `docker-compose.yml` does.
+   */
+  const trustProxy = config.get<string>('TRUST_PROXY', 'false') === 'true';
+  app.set('trust proxy', trustProxy ? 1 : false);
 
   /**
    * Everything lives under `/api`, so one origin serves the SPA and the API

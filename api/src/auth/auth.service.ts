@@ -8,6 +8,7 @@ import { UsersService } from '../users/users.service';
 import type { CreateUserDto, UserDto } from '../users/dto/users.dto';
 import type { SessionPayload } from './auth.guard';
 import type { LoginDto } from './dto/auth.dto';
+import { LoginThrottle } from './login-throttle.service';
 
 /** How long the browser keeps the cookie, and how long the signature verifies. */
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -38,6 +39,7 @@ export class AuthService {
     private readonly users: UsersService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly throttle: LoginThrottle,
   ) {}
 
   /** Creates the account (hashed, by `UsersService`) for the register flow. */
@@ -52,8 +54,14 @@ export class AuthService {
    * incorrect" — because a form that distinguishes "no such account" from
    * "wrong password" is a free account-existence oracle, and this API holds
    * family names and addresses that are worth not enumerating.
+   *
+   * `address` is the caller's, for `LoginThrottle`: the limit is checked
+   * before the password is compared and recorded after a miss, so the count
+   * is of guesses rather than of requests.
    */
-  async login(dto: LoginDto): Promise<UserDto> {
+  async login(dto: LoginDto, address: string): Promise<UserDto> {
+    this.throttle.assertAllowed(address);
+
     const email = dto.email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -65,6 +73,7 @@ export class AuthService {
       user?.passwordHash ?? DUMMY_DIGEST,
     );
     if (user === null || !ok) {
+      this.throttle.recordFailure(address);
       throw new UnauthorizedException('Email or password is incorrect.');
     }
 
@@ -76,7 +85,29 @@ export class AuthService {
     return this.users.get(userId);
   }
 
-  /** Signs the session. `sub` is the one field every guard reads. */
+  /**
+   * The server half of signing out: stamp the moment, and every token issued
+   * at or before it stops being honoured by `AuthGuard`.
+   *
+   * `updateMany` rather than `update` because this runs from a `@Public()`
+   * route — logging out twice, or with a cookie for an account that has since
+   * gone, must stay a 204 rather than becoming a 404 in somebody's face on
+   * their way out.
+   */
+  async revokeSession(userId: string): Promise<void> {
+    await this.prisma.user.updateMany({
+      where: { id: userId },
+      data: { sessionRevokedAt: new Date() },
+    });
+  }
+
+  /**
+   * Signs the session. `sub` is the one field every guard reads.
+   *
+   * `iatMs` is added here rather than left to the library: the library writes
+   * `iat` in whole seconds, and `AuthGuard` has to tell a token issued *after*
+   * a sign-out apart from one issued *before* it inside the same second.
+   */
   issueToken(user: {
     id: string;
     email: string;
@@ -86,6 +117,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       name: user.displayName,
+      iatMs: Date.now(),
     };
     return this.jwt.signAsync(payload, { expiresIn: SESSION_TTL_MS / 1000 });
   }

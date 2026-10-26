@@ -58,6 +58,11 @@ services:
       # sent there — the browser would silently log you out of every request.
       # Set COOKIE_SECURE=true when the same compose file is served over TLS.
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # The API only ever sees requests that nginx proxied, so the client
+      # address in `X-Forwarded-For` is trustworthy and the rate limits can
+      # count people rather than this one container. Keep it false anywhere
+      # the API is reachable directly (see api/.env.example).
+      TRUST_PROXY: ${TRUST_PROXY:-true}
     ports:
       - '${API_PORT:-3000}:3000'
 

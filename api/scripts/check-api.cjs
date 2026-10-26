@@ -106,6 +106,9 @@ async function call(method, path, body, { as = 'owner', cookie, origin } = {}) {
     raw: text,
     setCookie:
       typeof res.headers.getSetCookie === 'function' ? res.headers.getSetCookie() : [],
+    /** Every response header, by lowercase name — helmet and the throttler
+     *  are asserted from here rather than from a second curl script. */
+    headers: Object.fromEntries(res.headers),
   };
 }
 
@@ -185,6 +188,53 @@ async function main() {
     'POST /api/auth/logout → 204 and the cookie is expired',
     r.status === 204 && r.setCookie.join(' ').toLowerCase().includes('expires=thu, 01 jan 1970'),
     r,
+  );
+
+  /* Signing out has to reach the server. The cookie is gone from the
+     browser, but this copy of it still verifies — only the revocation stamp
+     `logout` wrote can refuse it. */
+  r = await call('GET', '/api/auth/me', undefined, { cookie: registeredCookie });
+  check(
+    'the token logout revoked is refused, even though its signature still verifies',
+    r.status === 401 && isErrorBody(r, 401),
+    r,
+  );
+  check(
+    'a revoked token also gets its cookie cleared',
+    r.setCookie.join(' ').includes('puong_session=;'),
+    r.setCookie,
+  );
+
+  r = await call('POST', '/api/auth/login', { email: freshEmail, password: 'Passw0rd!' }, { as: 'none' });
+  check(
+    'login after logout → a new session that works',
+    r.status === 200 &&
+      r.setCookie.join(' ').includes('puong_session=') &&
+      !JSON.stringify(r.body).includes('eyJ'),
+    r,
+  );
+
+  /* Security headers (helmet, api/src/main.ts) and the rate-limit headers
+     (@nestjs/throttler). Both are on *every* response, a 401 included —
+     which is also the proof that the throttler's guard runs before the
+     session guard rather than after it. */
+  r = await call('GET', '/api/auth/me', undefined, { as: 'none' });
+  const csp = r.headers['content-security-policy'] ?? '';
+  check(
+    'helmet → Content-Security-Policy: own origin, no plugins, no framing',
+    csp.includes("default-src 'self'") &&
+      csp.includes("script-src 'self'") &&
+      csp.includes("connect-src 'self'") &&
+      csp.includes("object-src 'none'"),
+    csp,
+  );
+  check('helmet → X-Content-Type-Options: nosniff', r.headers['x-content-type-options'] === 'nosniff', r.headers['x-content-type-options']);
+  check('helmet → X-Frame-Options (clickjacking)', typeof r.headers['x-frame-options'] === 'string', r.headers['x-frame-options']);
+  check('helmet → Referrer-Policy', typeof r.headers['referrer-policy'] === 'string', r.headers['referrer-policy']);
+  check(
+    'throttler → X-RateLimit-Limit/Remaining on responses',
+    r.headers['x-ratelimit-limit'] === '600' && r.headers['x-ratelimit-remaining'] !== undefined,
+    { limit: r.headers['x-ratelimit-limit'], remaining: r.headers['x-ratelimit-remaining'] },
   );
 
   /* No session at all: the whole API is closed. */

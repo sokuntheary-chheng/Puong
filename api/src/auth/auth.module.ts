@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
 import { AccessService } from './access.service';
+import { LoginThrottle } from './login-throttle.service';
 import { TreeRoleGuard } from './tree-role.guard';
 import { UsersModule } from '../users/users.module';
 
@@ -50,6 +51,7 @@ import { UsersModule } from '../users/users.module';
   providers: [
     AuthService,
     AccessService,
+    LoginThrottle,
     TreeRoleGuard,
     { provide: APP_GUARD, useClass: AuthGuard },
   ],

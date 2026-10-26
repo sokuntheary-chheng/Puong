@@ -2,7 +2,7 @@ import type { ApiResponseOptions } from '@nestjs/swagger';
 import { ErrorDto } from './error.dto';
 
 /**
- * The four errors almost every endpoint can return, named once.
+ * The errors almost every endpoint can return, named once.
  *
  * They are options objects rather than decorators so a controller can write
  * `@ApiBadRequestResponse(BAD_REQUEST)` and get the same description on every
@@ -40,4 +40,10 @@ export const FORBIDDEN: ApiResponseOptions = {
 export const SERVER_ERROR: ApiResponseOptions = {
   type: ErrorDto,
   description: 'Unexpected failure. The message never exposes the schema.',
+};
+
+export const TOO_MANY_REQUESTS: ApiResponseOptions = {
+  type: ErrorDto,
+  description:
+    'This address has spent its attempts for the current minute: `10` failed sign-ins, `10` registrations. `Retry-After` says how long to wait.',
 };

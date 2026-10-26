@@ -16,7 +16,7 @@ Diagram of what the endpoints read and write: **[docs/erd.md](erd.md)**.
 | **Who can call** | What the API checks *today*. Every row assumes a session first — see [Session](#session) — and then a role in the tree named in the path, or an ownership check on the row itself. |
 | **Request body** | The DTO that validates it. Anything not named in the DTO is rejected with a 400 rather than silently dropped. |
 | **Success** | The status and the payload. `204` responses have an empty body. |
-| **Errors** | Only the statuses this endpoint can produce beyond the ones every endpoint can produce (400 from the global pipe, 401 when there is no session, 500 from an unexpected failure). |
+| **Errors** | Only the statuses this endpoint can produce beyond the ones every endpoint can produce (400 from the global pipe, 401 when there is no session, 429 from the global rate limit, 500 from an unexpected failure). |
 
 Base URL in development: `http://localhost:3000` — every path below already
 includes the `/api` prefix set by the application. In the browser the same
@@ -36,6 +36,7 @@ response body. Authentication is a cookie:
 | Value | a signed JWT, `HttpOnly` and `SameSite=Strict`, `Path=/`, 7 days |
 | Set by | `POST /api/auth/register`, `POST /api/auth/login` |
 | Cleared by | `POST /api/auth/logout`, or an expired/invalid value |
+| Revoked by | `POST /api/auth/logout` — the stamp outlives the cookie |
 | `Secure` | off on `http://localhost`, on behind TLS — `COOKIE_SECURE=true` |
 
 `HttpOnly` means script cannot read it, `SameSite=Strict` means a navigated-in
@@ -45,16 +46,40 @@ the `Origin` header with the `Host` and refuses the request with a **403** if
 they disagree, which is what makes a cross-site request that *does* carry the
 cookie useless.
 
+Clearing a cookie only clears the copy this browser was holding, so `logout`
+also stamps `User.sessionRevokedAt`, and `AuthGuard` checks that column after
+the signature verifies: a token issued at or before the stamp is a **401**
+(`Your session has expired. Sign in again.`) with the cookie cleared, however
+valid its signature. Signing in again issues a token with a later timestamp
+and works normally.
+
 `AuthGuard` is global (`APP_GUARD`): a route is closed unless it is marked
 `@Public()`, which only `register`, `login` and `logout` are. Adding a
 controller without deciding whether it is public is a compile-time-visible
 omission, not a silent hole.
 
+### Rate limits
+
+Two endpoints are limited per client address, ahead of everything else:
+
+| Route | Limit | Counts |
+|---|---|---|
+| `POST /api/auth/register` | 10 / minute | every request |
+| `POST /api/auth/login` | 10 / minute | **failed** attempts only — signing in successfully is free |
+| every other route | 600 / minute | a backstop against a runaway loop, not a policy for people |
+
+Over the limit is a **429** with `Retry-After: 60` and the same three-field
+error body as everything else. The counters include the route, so a login loop
+cannot consume the budget of `GET /api/trees` — the rest of the API keeps
+answering its normal status while sign-in is blocked. Behind nginx the address
+comes from `X-Forwarded-For` (`TRUST_PROXY=true` in `docker-compose.yml`), so
+the key is the visitor rather than the proxy.
+
 ### 401 vs 403 vs 404
 
 | Status | Meaning | Example |
 |---|---|---|
-| **401** | No session, or the cookie is not valid any more. The body says to sign in again. | `GET /api/trees` with no cookie |
+| **401** | No session, or the cookie is not valid any more — expired, malformed, or revoked by a sign-out. The body says to sign in again. | `GET /api/trees` with no cookie; the cookie you logged out with |
 | **403** | You are *somebody*, and *somebody in this tree* — but not enough, or not the owner of that row. | a VIEWER posting a person; a contributor editing another author's memory; a cross-site POST |
 | **404** | The record does not exist **or was never yours to know about**: not a member of that tree, or a `PRIVATE` memory written by somebody else. Answering 403 here would confirm the thing the URL was guessing at (FR-2.5, FR-6.6). | `GET /api/trees/t1` as a non-member |
 
@@ -80,15 +105,16 @@ Sending one anyway is a **400** (`forbidNonWhitelisted`), not a quiet ignore.
 
 | Method | Path | Who can call | Request body | Success | Errors |
 |---|---|---|---|---|---|
-| POST | `/api/auth/register` | anyone — the session is how you get one | `{ email, displayName, password }` | 201 `{ user }` + `Set-Cookie` | 400, 409 (email taken) |
-| POST | `/api/auth/login` | anyone | `{ email, password }` | 200 `{ user }` + `Set-Cookie` | 400, 401 |
-| POST | `/api/auth/logout` | anyone (a missing cookie is not an error) | – | 204, cookie cleared | – |
-| GET | `/api/auth/me` | the session | – | 200 `User` | 401 |
+| POST | `/api/auth/register` | anyone — the session is how you get one | `{ email, displayName, password }` | 201 `{ user }` + `Set-Cookie` | 400, 409 (email taken), 429 |
+| POST | `/api/auth/login` | anyone | `{ email, password }` | 200 `{ user }` + `Set-Cookie` | 400, 401, 429 |
+| POST | `/api/auth/logout` | anyone (a missing cookie is not an error) | – | 204, cookie cleared **and** the session revoked server-side | – |
+| GET | `/api/auth/me` | the session | – | 200 `User` | 401 (including a token this logout revoked) |
 
 A failed login answers **401 with the same sentence whether the email exists
 or the password was wrong** (`Email or password is incorrect.`), so the
 endpoint cannot be used to enumerate accounts. Passwords are hashed with
-bcrypt (cost 10) and never leave the server.
+bcrypt (cost 10) and never leave the server. Ten failures in a minute from one
+address turn the next attempt into a **429** — see [Rate limits](#rate-limits).
 
 ### Users
 
@@ -222,10 +248,11 @@ Every non-2xx response, from every endpoint, has exactly these three fields:
 | 201 | Created — the new record is in the body |
 | 204 | Deleted, or logged out — the body is empty |
 | 400 | Validation failed, or the request is well-formed but meaningless (self-link, empty `PATCH`, parent loop, an identity field the DTO does not have) |
-| 401 | No session, or the cookie is no longer good |
+| 401 | No session, or the cookie is no longer good — expired, malformed, or revoked by a sign-out |
 | 403 | Wrong role, not the owner of that row, a cross-site unsafe request, or an edit to somebody else's shared record |
 | 404 | No such record — **or none you are allowed to know about** |
 | 409 | The record already exists, or the change would leave a tree with no ACTIVE OWNER |
+| 429 | Rate limited: too many requests from this address (10 sign-in failures or 10 registrations a minute; 600 elsewhere). `Retry-After` says how long to wait |
 | 500 | Unexpected failure; logged in full, reported as a fixed string |
 
 ---
@@ -253,11 +280,16 @@ Every non-2xx response, from every endpoint, has exactly these three fields:
 ## Verification
 
 `npm run check` in `api/` runs `scripts/check-api.cjs` against a running,
-seeded API: 184 assertions over the contract above — every status code in
-each table, the role matrix, the ownership rules, the cookie's attributes,
-and the fact that no identity field can be claimed from a request body. It
-cleans up everything it creates, so it passes twice in a row against the same
-database.
+seeded API: **192 assertions** over the contract above — every status code in
+each table, the role matrix, the ownership rules, the cookie's attributes, the
+revoked-session 401, the security and rate-limit headers, and the fact that no
+identity field can be claimed from a request body. It cleans up everything it
+creates, so it passes three times in a row against the same database.
+
+`npm run test:e2e` runs the Supertest suite (13 tests): the error body's
+shape, the session cookie, revocation after logout, and the rate limit. Both
+suites are part of `wind.md`'s must-have "tests" item; the static gate is
+`npm run lint && npm run typecheck && npm run build`.
 
 ## Seed data
 
