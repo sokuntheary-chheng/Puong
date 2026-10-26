@@ -32,14 +32,6 @@ export class SearchQueryDto {
   q: string;
 
   @ApiPropertyOptional({
-    example: 'u1',
-    description: 'Who is asking (FR-6.6).',
-  })
-  @IsOptional()
-  @IsString()
-  viewerId?: string;
-
-  @ApiPropertyOptional({
     enum: ['people', 'memories'],
     description: 'Restrict to one kind of result; omit for both.',
   })

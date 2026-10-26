@@ -18,7 +18,7 @@ Status of the milestones so far:
 | M0 Proposal | 3 | complete | `m0` — **not created yet** |
 | M1 Frontend prototype | 5 | complete | `m1` — **not created yet** |
 | M2 Backend API | 7 | complete | `m2` — **not created yet** |
-| M3 Integrated app | 9 | not started | `m3` |
+| M3 Integrated app | 9 | complete | `m3` |
 | M4 Feature complete | 12 | not started | `m4` |
 | M5 Deployed | 14 | not started | `m5` |
 
@@ -161,15 +161,110 @@ side.
 
 ## M3 Integrated app (week 9)
 
-- [ ] Frontend calls the real API; the mock is gone
-- [ ] Registration, login, logout; passwords hashed
-- [ ] Guards on the API for authentication, roles and ownership
-- [ ] Route guards in Vue; the UI hides what a role cannot do
-- [ ] Security checklist from week 9 run on your app; findings fixed or listed
+- [x] Frontend calls the real API; the mock is gone
+      — `web/src/services/mockApi.ts` and `web/src/mock/types.ts` are deleted; every store now
+      goes through `web/src/services/api.ts`, a `fetch` client with one base path (`/api`),
+      `credentials: 'same-origin'` and one error type (`ApiError`). `web/src/mock/db.json`
+      survives on purpose: it is no longer a mock database, it is the seed dataset
+      `api/prisma/seed.ts` loads. No store imports it. Verified by
+      `web/scripts/checks/serviceLayer.test.mjs` (36 assertions over the client, including
+      that no request anywhere carries `viewerId`, `authorId`, `createdById`, `ownerId` or a
+      token), plus `npm run lint`, `npm run typecheck`, `npm run check`, `npm run build`
+- [x] Registration, login, logout; passwords hashed
+      — `POST /api/auth/register|login|logout` with bcrypt (cost 10); a failed login is one
+      401 with one sentence whether the email exists or not. The browser side is
+      `/login` (two modes, `?next=` return, `ApiError` shown) and `useSessionStore`, which
+      keeps only the *account* — the session itself is a cookie it cannot read
+- [x] Guards on the API for authentication, roles and ownership
+      — `AuthGuard` on `APP_GUARD`, `@Public()` only on register/login/logout;
+      `TreeRoleGuard` + `@RequireRole(VIEWER|CONTRIBUTOR|OWNER)` per tree; ownership checked
+      against the loaded row (memory author, person creator, your own account row). 404 for
+      "not a member / not yours to see", 403 for "member, but not enough" —
+      see `docs/api.md` → *401 vs 403 vs 404*. Evidence: `npm run check` → **184 passed**,
+      `npm run test:e2e` → **9 passed**, both green twice in a row
+- [x] Route guards in Vue; the UI hides what a role cannot do
+      — `router.beforeEach` awaits the memoised `session.restore()` (`GET /auth/me`), sends
+      signed-out visitors to `/login?next=…`, bounces signed-in ones away from it, and
+      refuses `//…` as a next target. The UI reads `store.canWrite` / `store.myRole`: the
+      memory form, the add-person and add-relation controls and the role line in the tree
+      header are drawn only for a CONTRIBUTOR/OWNER, and a VIEWER cannot reach a write
+      screen by typing the URL — the API answers 403 and the view shows the server's sentence
+- [x] Security checklist from week 9 run on your app; findings fixed or listed
+      — **`docs/security.md`**: fixed = hashing, enumeration-safe login, `HttpOnly` +
+      `SameSite=Strict` cookie, Origin check, no raw SQL, no `v-html`, whitelist validation,
+      full access-control matrix, secrets out of Git, fixed 500 message. Listed = no rate
+      limiting, no lockout, no server-side revocation, the compose placeholder for
+      `JWT_SECRET`, 7 transitive `npm audit` advisories, no helmet/CSP, Swagger open, no
+      `Secure` on localhost — each with why it is acceptable now and what closes it
 - [ ] 3-minute demo in the practice session
+      — the only item that is not a file: it is given live. The walkthrough below is the
+      script it follows, and every step in it was rehearsed against the running app
 
 > **Explain: Where is the token stored in the browser, and what attack does that choice
 > protect against or expose?**
+
+**It is not stored *by the browser's script* at all. It is an `httpOnly` cookie named
+`puong_session` — `HttpOnly`, `SameSite=Strict`, `Path=/`, 7 days, `Secure` behind TLS — and
+it never appears in a response body: `POST /auth/login` answers with the account object and
+nothing else. The SPA's own state is only `currentUser` in `useSessionStore`.**
+
+Three things follow from that, and each is a different attack.
+
+**1. XSS cannot exfiltrate it (the property being bought).** The classic token design puts
+the JWT in `localStorage` or a JS variable so the client can attach it as an
+`Authorization` header. That is readable by *any script running on the page*: one injected
+`<img onerror>` in a biography, one compromised dependency, and the attacker reads
+`localStorage.token` and sends it to their own server, where it keeps working for the rest
+of its lifetime — on their machine, from any origin. With an `httpOnly` cookie,
+`document.cookie` does not contain it, there is no header for script to build, and there is
+no token in any JSON to grep for. An injected script can make the browser *act* as you, but
+it cannot walk away with a credential that outlives the page.
+
+**2. `SameSite=Strict` plus the server's `Origin`/`Host` check is what covers the attack
+this choice *exposes*.** A cookie is attached by the browser automatically, which is
+exactly why cookies brought CSRF back after headers solved it: a form on
+`evil.example` that POSTs to `/api/trees/t1/memories` would carry the session with it if
+anything allowed the request. `SameSite=Strict` stops it on modern browsers, and it is not
+left alone there — the API compares `Origin` with `Host` on every unsafe method and answers
+**403** if they disagree, which is checked by an e2e test and by
+`curl -H 'origin: http://evil.example'`. So the exposure is real in principle (a client
+that ignores `SameSite`) and closed by a second, server-side rule rather than by trusting
+the browser.
+
+**3. What is given up: revocation, and scope.** Three costs, all listed in
+`docs/security.md`:
+
+- **The token cannot be invalidated on demand.** Logout clears the cookie; the signed value
+  stays valid until it expires. Nothing else stores it, so "sign out everywhere" does not
+  exist. A denylist (or short-lived tokens + refresh) would close it.
+- **It travels with every same-origin request**, including any future endpoint that does
+  not need it — a cookie has no per-route opt-in the way an `Authorization` header does.
+  The global `AuthGuard` is the compensating control.
+- **It is a bearer credential for the whole origin**, so XSS is still a real problem, just
+  a *bounded* one: the attacker gets the session's power for the duration of the page, not
+  a copy of the key. That is the honest boundary of this choice — it protects against
+  exfiltration and CSRF, it does not protect against an attacker who is already executing
+  script in your origin.
+
+The design question behind it is therefore not "cookie or `localStorage`" but *what do you
+want an XSS bug to cost you*. Here the answer is: the tab it runs in, not the account for
+the next seven days.
+
+### 3-minute demo script
+
+1. **Registration** (30 s) — `/login` → *Create an account*, new address, land on an empty
+   home screen with **Add a family**; create one; you are its OWNER.
+2. **The real API** (30 s) — network panel: `POST /api/auth/register` → 201, `Set-Cookie:
+   HttpOnly; SameSite=Strict`, and a response body with no token in it.
+3. **Roles** (40 s) — sign in as `viewer@puong.dev`: no add-person, no memory form, and
+   `viewer@puong.dev` typing the memory-form URL directly gets the API's 403 sentence.
+   Sign in as `contributor@puong.dev`: writes work; edit somebody else's memory → 403.
+4. **Ownership** (30 s) — `owner@puong.dev` invites, demotes and removes; the last owner
+   cannot deactivate themselves (409).
+5. **Route guard** (20 s) — sign out on a deep link → `/login?next=…`, sign back in →
+   returned to where you were.
+6. **Security checklist** (30 s) — `docs/security.md` on screen: the fixed table, then the
+   listed table, ending with the 7 `npm audit` advisories and why each is transitive.
 
 ---
 

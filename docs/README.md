@@ -9,6 +9,9 @@ Supporting documents for the Puong project.
 | `print.css` | A4 print stylesheet used to render the PDF. |
 | `render-pdf.js` | The exact script that produced the shipped PDF. |
 | `design.md` | Design decisions for M1–M4: where a parentless person is placed, the role × action permission matrix, the six routes, the memory-form validation rules, what is out of scope. |
+| `api.md` | The API contract: one row per endpoint — who may call it, the body, the success, the possible errors — plus the session, the 401/403/404 rules and the error format (M2, rewritten at M3). |
+| `erd.md` | The ERD, generated from `api/prisma/schema.prisma` by `erd/build.mjs`. |
+| `security.md` | The week 9 security checklist run on this application: what was fixed, what is listed as a known gap, and what does not apply (M3). |
 | `m1-explain.md` | The graded M1 answer: what state lives in the Pinia store and what stays inside a component, and why. |
 | `wireframes.md` | Seven annotated wireframe sheets — the six main screens plus loading/empty/error (M1 checklist item). |
 | `wireframes/` | The SVG sheets themselves and `build.mjs`, which regenerates them from the route table in `design.md` §3. |

@@ -1,6 +1,7 @@
 import { watch } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteLocationRaw } from 'vue-router';
+import { useSessionStore } from '../stores/session';
 import { useTreesStore } from '../stores/trees';
 
 /**
@@ -41,7 +42,10 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
-      meta: { title: 'Log in' },
+      /* Public: the one screen that must work without a session, because it
+         is how you get one. Also the redirect target the guard below sends
+         everybody else to. */
+      meta: { title: 'Log in', public: true },
     },
     {
       path: '/',
@@ -87,7 +91,59 @@ const router = createRouter({
   },
 });
 
-/* Each route names its own document title; M3 adds the auth guard here. */
+/**
+ * Where `?next=` may send somebody after they sign in.
+ *
+ * Only a path inside this app. A value like `//elsewhere.example` would be a
+ * protocol-relative URL — open-redirect territory — so it is refused rather
+ * than sanitised, because refusing costs one comparison and sanitising costs
+ * a rule somebody has to keep correct.
+ */
+function safeNext(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  if (!value.startsWith('/') || value.startsWith('//')) return null;
+  return value;
+}
+
+/**
+ * M3 — the session guard.
+ *
+ * Runs before every navigation and answers one question: may this screen be
+ * shown to whoever the cookie says is here?
+ *
+ * - The session is resolved first (`session.restore()`), memoised, so the
+ *   very first navigation waits for `/auth/me` instead of racing it —
+ *   otherwise a refresh on a deep link would bounce a signed-in member
+ *   through the login screen for the length of one request.
+ * - **Not signed in** → `/login`, carrying where they were going in
+ *   `?next=`, so signing in returns them to the page they asked for rather
+ *   than to the front door.
+ * - **Signed in and heading for `/login`** → back out to `?next=` or `/`:
+ *   there is nothing to sign in to, and a login form that stays reachable
+ *   is a login form somebody will fill in twice.
+ * - Everything else is allowed, which includes every screen a *member* may
+ *   be refused from by the API. The guard decides "signed in or not"; the
+ *   role in one particular tree is the API's answer to give (404 for a tree
+ *   you are not part of), because the browser's opinion of a role is not
+ *   evidence.
+ */
+router.beforeEach(async (to) => {
+  const session = useSessionStore();
+  await session.restore();
+
+  if (to.meta.public === true) {
+    if (session.isSignedIn) return safeNext(to.query.next) ?? '/';
+    return true;
+  }
+
+  if (!session.isSignedIn) {
+    return { name: 'login', query: { next: to.fullPath } };
+  }
+
+  return true;
+});
+
+/* Each route names its own document title. */
 router.afterEach((to) => {
   const title = to.meta.title as string | undefined;
   document.title = title ? `${title} · Puong` : 'Puong';

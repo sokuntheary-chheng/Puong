@@ -36,14 +36,10 @@ export class CreateMemoryDto {
   @IsNotEmpty({ message: 'must not be empty.' })
   personId: string;
 
-  @ApiProperty({
-    example: 'u1',
-    description:
-      'Who wrote it. M3 replaces this with the session’s user, so a client cannot attribute a memory to somebody else.',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'must not be empty.' })
-  authorId: string;
+  /* No `authorId`: the writer is the signed-in account, read from the
+     session by the controller. M2 accepted it in the body because there was
+     no session to read; a body field that says who wrote a memory is a body
+     field that can put somebody else's name on their story. */
 
   @ApiProperty({ example: 'The New Year at grandmother’s', minLength: 1 })
   @IsString()
@@ -93,9 +89,11 @@ export class CreateMemoryDto {
  * An edit cannot re-attribute a memory: `personId` and `authorId` are left
  * out, so a PATCH can retitle, redate, re-photograph and change who may see
  * it — but "who wrote it" and "who it is about" are facts about the row.
+ * (`authorId` has no request field at all any more; `personId` still does
+ * and is simply not editable.)
  */
 export class UpdateMemoryDto extends PartialType(
-  OmitType(CreateMemoryDto, ['personId', 'authorId'] as const),
+  OmitType(CreateMemoryDto, ['personId'] as const),
 ) {}
 
 export class MemoryDto {

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { assertSomeField } from '../common/assert-some-field';
 import { isMissingRecord } from '../common/is-missing-record';
@@ -66,7 +70,22 @@ export class UsersService {
     });
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<UserDto> {
+  /**
+   * Changes one account — **your own** (M3 ownership check).
+   *
+   * The check is in the service rather than in the controller because this
+   * is the only place that also loads the row: "is this id mine" and "does
+   * this email still exist" come from one read, and there is no route to
+   * the update that skips the comparison.
+   */
+  async update(
+    id: string,
+    dto: UpdateUserDto,
+    actorId: string,
+  ): Promise<UserDto> {
+    if (id !== actorId) {
+      throw new ForbiddenException('You can only change your own account.');
+    }
     assertSomeField(dto);
 
     const passwordHash =

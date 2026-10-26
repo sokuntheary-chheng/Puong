@@ -35,7 +35,11 @@ export class SearchService {
    * applies it: a private memory must not become visible by being searched
    * for.
    */
-  async search(treeId: string, query: SearchQueryDto): Promise<PageDto> {
+  async search(
+    treeId: string,
+    query: SearchQueryDto,
+    viewerId: string,
+  ): Promise<PageDto> {
     const tree = await this.prisma.tree.findUnique({
       where: { id: treeId },
       select: { id: true },
@@ -78,14 +82,10 @@ export class SearchService {
           ...(query.visibility === undefined
             ? {}
             : { visibility: query.visibility }),
-          ...(query.viewerId === undefined
-            ? {}
-            : {
-                OR: [
-                  { visibility: MemoryVisibility.TREE },
-                  { authorId: query.viewerId },
-                ],
-              }),
+          /* FR-6.6 without a switch: `viewerId` is the session's account,
+             so a search can never be made to see a private memory by
+             claiming to be its author — M2's `?viewerId=` is gone. */
+          OR: [{ visibility: MemoryVisibility.TREE }, { authorId: viewerId }],
         },
         orderBy: { createdAt: 'desc' },
       });

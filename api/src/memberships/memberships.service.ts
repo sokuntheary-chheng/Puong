@@ -1,5 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MembershipStatus } from '@prisma/client';
+import { AccessService } from '../auth/access.service';
 import { assertSomeField } from '../common/assert-some-field';
 import { isMissingRecord } from '../common/is-missing-record';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,9 +15,19 @@ import type {
   UpdateMembershipDto,
 } from './dto/memberships.dto';
 
+/**
+ * Membership writes are the one place where "who is asking" is decided from
+ * a row rather than from the path: `/memberships/:id` does not name a tree,
+ * so the tree is read from the membership itself and the caller's OWNER
+ * role *there* is what is checked. The role guard cannot do it — it only
+ * ever sees path parameters — which is why this service owns the check.
+ */
 @Injectable()
 export class MembershipsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly access: AccessService,
+  ) {}
 
   /**
    * Every membership of one tree — the member list an owner curates.
@@ -91,13 +107,52 @@ export class MembershipsService {
     });
   }
 
-  async update(id: string, dto: UpdateMembershipDto): Promise<MembershipDto> {
+  /**
+   * Changes a membership: role, status, or both.
+   *
+   * Three callers can reach this row, and each may do less:
+   *
+   * - **The owner of that tree** — anything.
+   * - **The member themselves** — their own `status` only: accepting or
+   *   declining an invitation (FR-3.5) is the one membership change a
+   *   non-owner makes, and letting them also send `role` would be a way to
+   *   promote yourself by editing your own row.
+   * - **Anybody else** — 403, after a 404 if they are not a member at all.
+   *
+   * The last-owner rule lives here too: a tree with no ACTIVE OWNER cannot
+   * be repaired through this API (only an owner may invite), so removing or
+   * demoting the final one is refused rather than left for somebody to
+   * discover later.
+   */
+  async update(
+    id: string,
+    dto: UpdateMembershipDto,
+    actorId: string,
+  ): Promise<MembershipDto> {
     assertSomeField(dto);
 
     const current = await this.prisma.membership.findUnique({ where: { id } });
     if (current === null) {
       throw new NotFoundException(`membership ${id} was not found.`);
     }
+
+    const ownRow = current.userId === actorId;
+    if (ownRow) {
+      if (dto.role !== undefined) {
+        throw new ForbiddenException(
+          'Only an owner of this tree can change a role.',
+        );
+      }
+    } else {
+      await this.access.assertRole(current.treeId, actorId, 'OWNER');
+    }
+
+    const losesOwner =
+      current.role === 'OWNER' &&
+      current.status === MembershipStatus.ACTIVE &&
+      ((dto.role !== undefined && dto.role !== 'OWNER') ||
+        (dto.status !== undefined && dto.status !== MembershipStatus.ACTIVE));
+    if (losesOwner) await this.assertNotLastOwner(current.treeId, current.id);
 
     const now = new Date();
     const acceptsNow =
@@ -123,14 +178,30 @@ export class MembershipsService {
   }
 
   /**
-   * Removes a membership — an invitation declined, or a member removed.
+   * Removes a membership — an invitation declined, a member removed, or you
+   * leaving (FR-3.5).
    *
-   * There is no guard here that the last OWNER cannot be removed: that rule
-   * belongs with ownership transfer (story 10) and the authentication of M3,
-   * where "who is asking" finally exists. Enforcing it without knowing the
-   * caller would enforce it against everyone.
+   * The owner check is against the tree *of this row*, read here rather than
+   * from a path parameter; leaving a tree yourself is the exception, which
+   * is what "decline an invitation" means for the person invited.
    */
-  async remove(id: string): Promise<void> {
+  async remove(id: string, actorId: string): Promise<void> {
+    const current = await this.prisma.membership.findUnique({ where: { id } });
+    if (current === null) {
+      throw new NotFoundException(`membership ${id} was not found.`);
+    }
+
+    if (current.userId !== actorId) {
+      await this.access.assertRole(current.treeId, actorId, 'OWNER');
+    }
+
+    if (
+      current.role === 'OWNER' &&
+      current.status === MembershipStatus.ACTIVE
+    ) {
+      await this.assertNotLastOwner(current.treeId, current.id);
+    }
+
     try {
       await this.prisma.membership.delete({ where: { id } });
     } catch (error) {
@@ -138,6 +209,26 @@ export class MembershipsService {
         throw new NotFoundException(`membership ${id} was not found.`);
       }
       throw error;
+    }
+  }
+
+  /** Refuses to leave a tree with nobody who can administer it. */
+  private async assertNotLastOwner(
+    treeId: string,
+    membershipId: string,
+  ): Promise<void> {
+    const others = await this.prisma.membership.count({
+      where: {
+        treeId,
+        role: 'OWNER',
+        status: MembershipStatus.ACTIVE,
+        id: { not: membershipId },
+      },
+    });
+    if (others === 0) {
+      throw new ConflictException(
+        'This is the tree’s last owner: promote somebody else first, or the tree could not be administered again.',
+      );
     }
   }
 

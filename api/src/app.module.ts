@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module';
 import { MemoriesModule } from './memories/memories.module';
 import { MembershipsModule } from './memberships/memberships.module';
 import { PeopleModule } from './people/people.module';
@@ -25,6 +26,10 @@ import { UsersModule } from './users/users.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    /* AuthModule first, and global: it registers the `APP_GUARD` that every
+       module below is protected by, so the dependency reads in the order the
+       request is checked — session, then tree role, then the handler. */
+    AuthModule,
     UsersModule,
     TreesModule,
     MembershipsModule,

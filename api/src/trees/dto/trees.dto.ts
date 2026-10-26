@@ -1,21 +1,15 @@
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-  OmitType,
-  PartialType,
-} from '@nestjs/swagger';
-import {
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 /**
  * Creating a tree also creates its OWNER membership, so the creator is
  * stored as the owner in the same transaction (story 1's acceptance
  * criterion) — there is no window in which a tree exists with nobody in it.
+ *
+ * There is **no `ownerId` field**: the owner is the signed-in account, read
+ * from the session by the controller. A body that could name an owner would
+ * be an escalation path — anybody could create a tree owned by somebody
+ * else, or claim one they never made.
  */
 export class CreateTreeDto {
   @ApiProperty({
@@ -46,21 +40,11 @@ export class CreateTreeDto {
   @IsString()
   @MaxLength(500)
   coverPhotoUrl?: string;
-
-  @ApiProperty({
-    example: 'u1',
-    description: 'The account creating the tree — becomes its OWNER.',
-  })
-  @IsString()
-  @IsNotEmpty()
-  ownerId: string;
 }
 
 /** The owner cannot be reassigned by editing a tree — that is a membership
  *  change (story 10, ownership transfer), not a field on the row. */
-export class UpdateTreeDto extends PartialType(
-  OmitType(CreateTreeDto, ['ownerId'] as const),
-) {
+export class UpdateTreeDto extends PartialType(CreateTreeDto) {
   @ApiPropertyOptional({
     example: 'u2',
     nullable: true,

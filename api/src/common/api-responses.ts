@@ -25,6 +25,18 @@ export const CONFLICT: ApiResponseOptions = {
     'The record already exists (unique constraint), or the operation would break a relationship.',
 };
 
+export const UNAUTHORIZED: ApiResponseOptions = {
+  type: ErrorDto,
+  description:
+    'No session, or one that has expired: `401` before the handler runs. Sign in at `POST /auth/login`.',
+};
+
+export const FORBIDDEN: ApiResponseOptions = {
+  type: ErrorDto,
+  description:
+    'You are a member of the tree, but your role (or your ownership of this record) does not reach this far.',
+};
+
 export const SERVER_ERROR: ApiResponseOptions = {
   type: ErrorDto,
   description: 'Unexpected failure. The message never exposes the schema.',

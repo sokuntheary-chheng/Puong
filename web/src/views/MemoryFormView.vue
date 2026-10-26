@@ -2,7 +2,7 @@
 import { computed, reactive, ref } from 'vue';
 import { useStringParam } from '../composables/useRouteString';
 import { useMemoriesStore } from '../stores/memories';
-import type { MemoryVisibility } from '../mock/types';
+import type { MemoryVisibility } from '../types';
 import {
   ALLOWED_IMAGE_LABELS,
   MAX_IMAGE_MB,

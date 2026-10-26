@@ -3,12 +3,20 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { BAD_REQUEST, CONFLICT, NOT_FOUND } from '../common/api-responses';
+import {
+  BAD_REQUEST,
+  CONFLICT,
+  FORBIDDEN,
+  NOT_FOUND,
+} from '../common/api-responses';
+import type { Actor } from '../auth/auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
 import { CreateUserDto, UpdateUserDto, UserDto } from './dto/users.dto';
 import { UsersService } from './users.service';
 
@@ -16,8 +24,12 @@ import { UsersService } from './users.service';
  * Accounts. Read and write only — there is deliberately no `DELETE /users/:id`:
  * a person and a memory outlive the account that wrote them, so removing an
  * account would have to decide what happens to the family record it created.
- * That decision belongs with the ownership rules of M3, not to a CRUD
- * reflex here.
+ *
+ * **Who may call:** any signed-in account (the global `AuthGuard` runs first).
+ * Writing is narrower still — `PATCH /users/:id` is **you**, because an
+ * account that can change somebody else's password can take their session
+ * and their memories with it. Registration is not here: it is
+ * `POST /auth/register`, which also issues the session.
  */
 @ApiTags('users')
 @Controller('users')
@@ -28,7 +40,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'List every account',
     description:
-      'Used for the "who wrote this" line on a memory and for choosing a member to invite.',
+      'Used for the "who wrote this" line on a memory and for choosing a member to invite. Requires a session; `passwordHash` is never in the response.',
   })
   @ApiOkResponse({ type: [UserDto] })
   list(): Promise<UserDto[]> {
@@ -45,9 +57,9 @@ export class UsersController {
 
   @Post()
   @ApiOperation({
-    summary: 'Create an account',
+    summary: 'Create an account on somebody’s behalf',
     description:
-      'The password is hashed with bcrypt (cost 10) and never returned. A login flow with a token is M3.',
+      'For adding a relative who has no account yet. The password is hashed with bcrypt (cost 10) and never returned. Self-service registration — which is what issues a session — is `POST /auth/register`.',
   })
   @ApiCreatedResponse({ type: UserDto })
   @ApiBadRequestResponse(BAD_REQUEST)
@@ -57,15 +69,21 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Change an account’s email, name or password' })
+  @ApiOperation({
+    summary: 'Change your own email, name or password',
+    description:
+      'You may change only your own account: `403` on anybody else’s.',
+  })
   @ApiOkResponse({ type: UserDto })
   @ApiBadRequestResponse(BAD_REQUEST)
   @ApiNotFoundResponse(NOT_FOUND)
   @ApiConflictResponse(CONFLICT)
+  @ApiForbiddenResponse(FORBIDDEN)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
+    @CurrentUser() actor: Actor,
   ): Promise<UserDto> {
-    return this.users.update(id, dto);
+    return this.users.update(id, dto, actor.id);
   }
 }

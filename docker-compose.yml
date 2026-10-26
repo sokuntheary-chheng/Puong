@@ -53,6 +53,11 @@ services:
       PORT: ${PORT:-3000}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
       JWT_SECRET: ${JWT_SECRET:-replace-me-before-this-leaves-your-machine}
+      # The session cookie's `Secure` attribute. Off by default: this stack
+      # serves plain http on :8080, and a Secure cookie would simply never be
+      # sent there — the browser would silently log you out of every request.
+      # Set COOKIE_SECURE=true when the same compose file is served over TLS.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     ports:
       - '${API_PORT:-3000}:3000'
 

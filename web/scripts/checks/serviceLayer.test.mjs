@@ -1,232 +1,404 @@
 /**
- * Checks for the M1 service layer and the generation rule.
+ * Checks for the M3 service layer — the real HTTP client.
  *
- * mockApi's latency is turned off here: the delay exists so that a browser
- * can show a loading state, and it would only make these assertions slow.
+ * The service is tested by standing a fake API in front of `fetch`: the
+ * client's whole job is *what it asks for and what it does with the answer*,
+ * and both of those are observable at that seam without a server, a network
+ * or a database. The contract it is checked against is the one the API's own
+ * harness (`api/scripts/check-api.cjs`) enforces from the other side:
+ * `{ statusCode, message: string[], error }` bodies, 204 for a deletion,
+ * and a session that exists only as a cookie.
+ *
+ * Two properties get more attention than the rest, because they are the M3
+ * changes rather than plumbing:
+ *
+ * 1. **No identity in the request.** Every call is checked for the absence
+ *    of `viewerId`, `authorId`, `createdById`, `ownerId` and any form of
+ *    token — the server reads those from the cookie, and a client that sent
+ *    them would be the escalation path the API refuses.
+ * 2. **Failures arrive as one thing.** Whatever the server does — a validation
+ *    array, an empty 500, a dead network — the caller sees an `ApiError` with
+ *    a status and a sentence.
  */
 
 import {
-  NotFoundError,
+  ApiError,
+  SEARCH_PAGE_SIZE,
   compareMemoriesByDate,
   createMemory,
+  createTree,
+  demo,
   getMyRole,
-  getTree,
   listMemories,
   listPeople,
-  listRelations,
-  mockApi,
+  listTrees,
+  login,
+  logout,
+  register,
   search,
+  setUnauthorizedHandler,
 } from '../../.checks/svc.mjs';
 import { computeGenerations, groupByGeneration } from '../../.checks/gen.mjs';
 
 const problems = [];
+let passed = 0;
 
 function check(ok, label, detail = '') {
-  if (ok) console.log(`  ok    ${label}`);
-  else problems.push(`${label}${detail ? ` — ${detail}` : ''}`);
-}
-
-mockApi.setLatency(0);
-
-/* ---------- FR-6.6: a PRIVATE memory is its author's alone ---------- */
-
-const asOwner = (await listMemories('t1', { viewerId: 'u1' })).map((m) => m.id);
-const asContributor = (await listMemories('t1', { viewerId: 'u2' })).map((m) => m.id);
-const asViewer = (await listMemories('t1', { viewerId: 'u3' })).map((m) => m.id);
-
-check(asOwner.includes('mm3'), 'the author sees their own PRIVATE memory');
-check(
-  !asContributor.includes('mm3') && !asViewer.includes('mm3'),
-  'nobody else sees it — not even an owner',
-);
-check(asContributor.includes('mm4'), 'the second author sees their own PRIVATE memory');
-check(!asOwner.includes('mm4'), 'the owner does not see the contributor’s private memory');
-check(
-  !asViewer.includes('mm3') && !asViewer.includes('mm4'),
-  'a viewer sees no PRIVATE memory at all',
-);
-check(asViewer.includes('mm1') && asViewer.includes('mm5'), 'a viewer still sees TREE memories');
-check(asOwner.length === 5, 'the owner sees five of the six memories', `got ${asOwner.length}`);
-check(asViewer.length === 4, 'a viewer sees the four TREE memories', `got ${asViewer.length}`);
-
-/* ---------- FR-6.7: newest first, undated last ---------- */
-
-const visible = await listMemories('t1', { viewerId: 'u1' });
-const order = visible.map((m) => m.id);
-const dates = visible.filter((m) => m.happenedAt !== null).map((m) => m.happenedAt);
-
-check(
-  JSON.stringify(dates) === JSON.stringify([...dates].sort().reverse()),
-  'dated memories are newest first',
-  JSON.stringify(dates),
-);
-check(order.at(-1) === 'mm5', 'the undated memory sorts last, not first', JSON.stringify(order));
-/* mm4 is PRIVATE and the contributor's, so the owner sees four dated
-   memories rather than five — the count is itself a FR-6.6 assertion. */
-check(
-  visible.filter((m) => m.happenedAt !== null).length === 4,
-  'the owner sees four dated memories',
-);
-
-const resorted = [...visible].reverse().sort(compareMemoriesByDate);
-check(
-  JSON.stringify(resorted.map((m) => m.id)) === JSON.stringify(order),
-  'the exported comparator reproduces the service order from a shuffled list',
-);
-
-/* ---------- search: accent-insensitive ---------- */
-
-const r1 = await search({ treeId: 't1', query: 'hoi an', page: 1, viewerId: 'u1' });
-check(r1.total > 0, '"hoi an" matches "Hội An …" without the diacritic', `total ${r1.total}`);
-
-const r2 = await search({ treeId: 't1', query: 'HOI AN', page: 1, viewerId: 'u1' });
-check(
-  r2.items.some((x) => x.kind === 'person' && x.person.fullName === 'Mr. Mango'),
-  'an all-caps query without diacritics finds the exact person',
-);
-
-const r3 = await search({ treeId: 't1', query: 'workshop', page: 1, viewerId: 'u1' });
-check(
-  r3.items.some((x) => x.kind === 'memory' && x.memory.id === 'mm5'),
-  'a query matching memory body text finds the memory',
-);
-
-/* ---------- search cannot reach what FR-6.6 hides ---------- */
-
-const r4 = await search({ treeId: 't1', query: 'years after 1975', page: 1, viewerId: 'u3' });
-check(r4.total === 0, 'a viewer searching a PRIVATE memory title finds nothing');
-const r5 = await search({ treeId: 't1', query: 'years after 1975', page: 1, viewerId: 'u1' });
-check(
-  r5.items.some((x) => x.kind === 'memory' && x.memory.id === 'mm3'),
-  'its author searching the same words finds it',
-);
-
-/* ---------- pagination ---------- */
-
-const p1 = await search({ treeId: 't1', query: 'an', page: 1, viewerId: 'u1', pageSize: 3 });
-check(p1.items.length === 3, 'the page size is honoured', `got ${p1.items.length}`);
-check(p1.totalPages === Math.ceil(p1.total / 3), 'totalPages is derived from the total');
-const p2 = await search({ treeId: 't1', query: 'an', page: 2, viewerId: 'u1', pageSize: 3 });
-check(p2.items.length > 0 && p2.page === 2, 'page 2 returns the next slice');
-check(
-  p1.items.filter((x) => p2.items.includes(x)).length === 0,
-  'consecutive pages do not overlap',
-);
-const p99 = await search({ treeId: 't1', query: 'an', page: 99, viewerId: 'u1', pageSize: 3 });
-check(p99.page === p1.totalPages, 'a page past the end clamps to the last', `got ${p99.page}`);
-const blank = await search({ treeId: 't1', query: '   ', page: 1, viewerId: 'u1' });
-check(blank.total === 0 && blank.items.length === 0, 'a blank query returns nothing, not everything');
-
-/* ---------- the generation rule agrees with the seed checker ---------- */
-
-const people = await listPeople('t1');
-const relations = await listRelations('t1');
-
-const expected = {
-  0: ['p01', 'p02', 'p23'],
-  1: ['p03', 'p04', 'p05', 'p06', 'p07', 'p08'],
-  2: ['p09', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17'],
-  3: ['p18', 'p19', 'p20', 'p21', 'p22'],
-};
-
-const generation = computeGenerations(people, relations);
-let placementAgrees = true;
-for (const [g, members] of Object.entries(expected)) {
-  const got = people.filter((p) => generation.get(p.id) === Number(g)).map((p) => p.id).sort();
-  const want = [...members].sort();
-  if (JSON.stringify(got) !== JSON.stringify(want)) {
-    placementAgrees = false;
-    problems.push(`generation ${g}: expected ${want.join(',')} — got ${got.join(',')}`);
+  if (ok) {
+    passed += 1;
+    console.log(`  ok    ${label}`);
+  } else {
+    problems.push(`${label}${detail ? ` — ${detail}` : ''}`);
   }
 }
-check(
-  placementAgrees,
-  'the application places people exactly where scripts/check-generations.mjs expects',
-);
 
-const columns = groupByGeneration(people, relations);
-check(
-  columns.map((c) => c.generation).join(',') === '0,1,2,3',
-  'columns come out oldest first',
-  columns.map((c) => c.generation).join(','),
-);
-check(
-  columns.reduce((n, c) => n + c.people.length, 0) === 23,
-  'every person appears in exactly one column',
-);
-check(
-  columns[0].people.some((p) => p.id === 'p23'),
-  'the unlinked person lands in generation 0, where the tree flags her as not linked yet',
-);
-check(
-  relations
-    .filter((r) => r.type === 'PARENT')
-    .every((r) => (generation.get(r.fromId) ?? 0) < (generation.get(r.toId) ?? 0)),
-  'every parent is in a strictly earlier generation than their child',
-);
+/* ------------------------------------------------------------------ */
+/* The fake API                                                        */
+/* ------------------------------------------------------------------ */
 
-/* ---------- roles ---------- */
+/** Every request the client has made since the last reset. */
+let calls = [];
 
-check((await getMyRole('t1', 'u1'))?.role === 'OWNER', 'the owner is OWNER of t1');
-check((await getMyRole('t1', 'u3'))?.role === 'VIEWER', 'the viewer is VIEWER of t1');
-check(
-  (await getMyRole('t2', 'u3')) === null,
-  'an INVITED membership grants no role — FR-2.3 returns 404',
-);
+/** What the fake API answers with; set per section below. */
+let answer = () => {
+  throw new Error('the fake API was asked before it was configured');
+};
 
-/* ---------- missing records ---------- */
-
-try {
-  await getTree('nope');
-  check(false, 'a missing tree should throw');
-} catch (error) {
-  check(
-    error instanceof NotFoundError,
-    'a missing tree throws NotFoundError rather than a generic failure',
-  );
+function serve(handler) {
+  answer = handler;
 }
 
-/* ---------- writing ---------- */
+globalThis.fetch = async (url, init) => {
+  const call = { url: String(url), init };
+  calls.push(call);
+  return answer(call, init);
+};
+
+function http(status, body) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => {
+      if (body === undefined) throw new Error('no body on a 204');
+      return body;
+    },
+  };
+}
+
+const lastCall = () => calls[calls.length - 1];
+const bodyOf = (call) => JSON.parse(call.init.body);
+
+async function rejects(promise, label) {
+  try {
+    await promise;
+    check(false, label, 'resolved, but should have thrown');
+    return null;
+  } catch (error) {
+    return error;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* FR-6.7 — the order a memory list is sorted in                       */
+/* ------------------------------------------------------------------ */
+
+const mem = (id, happenedAt, createdAt) => ({ id, happenedAt, createdAt });
+
+check(
+  [mem('a', '2020-01-01', 't1'), mem('b', '1999-05-04', 't2')]
+    .sort(compareMemoriesByDate)
+    .map((m) => m.id)
+    .join(',') === 'a,b',
+  'newer memories come first',
+);
+
+check(
+  [mem('undated', null, 't9'), mem('dated', '1990-01-01', 't8')]
+    .sort(compareMemoriesByDate)
+    .map((m) => m.id)
+    .join(',') === 'dated,undated',
+  'undated memories sort last (nulls last, as the API sorts them)',
+);
+
+check(
+  [mem('a', '2020-01-01', '2026-01-02'), mem('b', '2020-01-01', '2026-01-01')]
+    .sort(compareMemoriesByDate)
+    .map((m) => m.id)
+    .join(',') === 'a,b',
+  'the same date falls back to the newest write',
+);
+
+/* ------------------------------------------------------------------ */
+/* Session — how you get a cookie                                      */
+/* ------------------------------------------------------------------ */
+
+serve(() =>
+  http(200, {
+    user: { id: 'u9', email: 'new@puong.dev', displayName: 'New Member', createdAt: 'now' },
+  }),
+);
+
+const registered = await register({
+  email: 'new@puong.dev',
+  displayName: 'New Member',
+  password: 'Passw0rd!',
+});
+
+check(registered.id === 'u9', 'register returns the account, not a token');
+check(
+  lastCall().url === '/api/auth/register' &&
+    lastCall().init.method === 'POST' &&
+    lastCall().init.credentials === 'same-origin',
+  'register is a same-origin POST — the cookie is what carries the session',
+);
+check(
+  !('token' in bodyOf(lastCall())) && !('passwordHash' in registered),
+  'no token and no password hash in the request or the answer',
+);
+
+serve(() => http(200, { user: { id: 'u1', email: 'owner@puong.dev', displayName: 'A Owner', createdAt: 'now' } }));
+
+const signedIn = await login({ email: 'owner@puong.dev', password: 'Passw0rd!' });
+check(signedIn.id === 'u1', 'login returns the account');
+
+const loginCall = lastCall();
+check(
+  Object.keys(bodyOf(loginCall)).sort().join(',') === 'email,password',
+  'the login body is exactly the two fields the form collected',
+);
+check(
+  loginCall.init.headers['content-type'] === 'application/json' &&
+    loginCall.init.headers.Authorization === undefined,
+  'the JSON body is announced, and there is no Authorization header to forge',
+);
+
+let unauthorized = 0;
+setUnauthorizedHandler(() => {
+  unauthorized += 1;
+});
+
+serve(() => http(401, { statusCode: 401, message: ['No session.'], error: 'Unauthorized' }));
+
+const denied = await rejects(login({ email: 'x@y.z', password: 'wrong' }), 'a 401 becomes an ApiError');
+check(denied instanceof ApiError && denied.status === 401, 'a 401 arrives as ApiError(401)');
+check(unauthorized === 1, 'a 401 tells the session store to drop the user');
+check(denied.message === 'No session.', 'the server’s sentence is what the view shows');
+
+serve(() => http(403, { statusCode: 403, message: ['Not your tree.'], error: 'Forbidden' }));
+const forbidden = await rejects(listTrees(), 'a 403 becomes an ApiError');
+check(forbidden instanceof ApiError && forbidden.status === 403, 'a 403 arrives as ApiError(403)');
+
+serve(() => http(500, undefined));
+const bare = await rejects(listTrees(), 'a body-less 500 becomes an ApiError');
+check(
+  bare instanceof ApiError && bare.status === 500 && /500/.test(bare.message),
+  'a 500 with no body still produces a sentence to show',
+);
+
+serve(() => {
+  throw new Error('ECONNREFUSED');
+});
+const offline = await rejects(listTrees(), 'a dead API becomes an ApiError');
+check(
+  offline instanceof ApiError && offline.status === 0 && /Could not reach the API/.test(offline.message),
+  'an unreachable API is status 0 — not an HTTP answer the caller should branch on',
+);
+
+setUnauthorizedHandler(() => {});
+
+serve(() => http(204, undefined));
+await logout();
+check(
+  lastCall().url === '/api/auth/logout' && lastCall().init.method === 'POST',
+  'logout posts to clear the cookie',
+);
+
+/* ------------------------------------------------------------------ */
+/* The demo control: a failure the browser makes, and admits making    */
+/* ------------------------------------------------------------------ */
+
+serve(() => http(200, []));
+await listPeople('t1');
+const before = calls.length;
+
+demo.failNext('people.list');
+const stopped = await rejects(listPeople('t1'), 'an armed failure throws');
+check(
+  stopped instanceof ApiError && stopped.status === 0 && /stopped in the browser/.test(stopped.message),
+  'an armed failure says it was stopped in the browser — it does not pretend the server broke',
+);
+check(calls.length === before, 'and nothing is sent when it is armed');
+demo.clearFailures();
+
+await listPeople('t1');
+check(calls.length === before + 1, 'clearing the arm lets the real request through');
+
+/* ------------------------------------------------------------------ */
+/* Trees, roles, people, memories — the shapes and the URLs            */
+/* ------------------------------------------------------------------ */
+
+serve(() =>
+  http(200, [
+    { id: 't1', name: 'Mango', description: null, ownerId: 'u1' },
+  ]),
+);
+
+const trees = await listTrees();
+check(trees.length === 1 && lastCall().url === '/api/trees', 'GET /api/trees — the caller is the cookie');
+
+serve(() => http(201, { id: 't9', name: 'New family', description: 'Three generations' }));
+await createTree({ name: 'New family', description: 'Three generations' });
+const treeBody = bodyOf(lastCall());
+check(
+  lastCall().url === '/api/trees' && Object.keys(treeBody).sort().join(',') === 'description,name',
+  'POST /api/trees carries a name and a description — never an ownerId',
+);
+
+serve(() =>
+  http(200, { id: 'mb1', treeId: 't1', userId: 'u1', role: 'OWNER', status: 'ACTIVE' }),
+);
+const membership = await getMyRole('t1', 'u1');
+check(membership.role === 'OWNER', 'my role comes back as the membership row');
+
+serve(() => http(404, { statusCode: 404, message: ['Not a member.'], error: 'Not Found' }));
+const absent = await getMyRole('t1', 'u1');
+check(absent === null, 'not being a member is an answer (null), not an error to render');
+
+serve(() => http(403, { statusCode: 403, message: ['No.'], error: 'Forbidden' }));
+const refused = await rejects(getMyRole('t1', 'u1'), 'a 403 is not swallowed');
+check(refused instanceof ApiError && refused.status === 403, 'a 403 still throws — only 404 becomes null');
+
+serve(() => http(200, []));
+await listMemories('t1', { personId: 'p 01' });
+check(
+  lastCall().url === '/api/trees/t1/memories?personId=p%2001',
+  'a person scope is encoded into the query string',
+);
+
+await listMemories('t1');
+check(
+  lastCall().url === '/api/trees/t1/memories',
+  'without a person scope there is no query string — and no viewer to pass',
+);
+
+serve(() =>
+  http(201, {
+    id: 'mm9',
+    treeId: 't1',
+    personId: 'p01',
+    authorId: 'u2',
+    title: 'A note',
+    body: 'Text',
+    happenedAt: null,
+    visibility: 'TREE',
+  }),
+);
 
 const written = await createMemory({
   treeId: 't1',
   personId: 'p01',
-  authorId: 'u1',
-  title: '  A new record  ',
-  body: '  Written with surrounding space.  ',
+  title: 'A note',
+  body: 'Text',
   happenedAt: '',
   visibility: 'TREE',
 });
-check(written.title === 'A new record', 'the title is trimmed on write');
-check(written.body === 'Written with surrounding space.', 'the body is trimmed on write');
+const memoryBody = bodyOf(lastCall());
 check(
-  written.happenedAt === null,
-  'a blank date is stored as null rather than as an empty string every reader must special-case',
+  lastCall().url === '/api/trees/t1/memories' &&
+    !('treeId' in memoryBody) &&
+    !('authorId' in memoryBody) &&
+    !('id' in memoryBody),
+  'a memory is posted to its tree, with no authorId — the cookie is the author',
 );
-check(written.id === 'mm7', 'the new id continues the seed sequence', written.id);
+check(written.authorId === 'u2', 'and the answer reports the author the server recorded');
+
+/* ------------------------------------------------------------------ */
+/* Search — pagination, filters, and how hits come back                */
+/* ------------------------------------------------------------------ */
+
+serve(() =>
+  http(200, {
+    items: [
+      { kind: 'person', person: { id: 'p01' }, memory: null },
+      { kind: 'memory', memory: { id: 'mm4' }, person: null },
+    ],
+    page: 2,
+    pageSize: SEARCH_PAGE_SIZE,
+    total: 13,
+    totalPages: 3,
+  }),
+);
+
+const hits = await search({ treeId: 't1', query: 'theary', page: 2, kind: 'people' });
+const searchUrl = lastCall().url;
 
 check(
-  (await listMemories('t1', { viewerId: 'u3' })).some((m) => m.id === 'mm7'),
-  'a TREE memory written after seeding is visible to a viewer',
+  searchUrl.includes('q=theary') &&
+    searchUrl.includes('page=2') &&
+    searchUrl.includes(`pageSize=${SEARCH_PAGE_SIZE}`) &&
+    searchUrl.includes('kind=people'),
+  'the query, the page, the page size and the kind are all in the URL, so a search is a link',
 );
 
-try {
-  await createMemory({
-    treeId: 't1',
-    personId: 'p99',
-    authorId: 'u1',
-    title: 'x',
-    body: 'y',
-    happenedAt: '',
-    visibility: 'TREE',
-  });
-  check(false, 'writing for a person who does not exist should throw');
-} catch (error) {
-  check(
-    error instanceof NotFoundError,
-    'writing for a missing person throws NotFoundError',
-  );
-}
+check(
+  hits.total === 13 && hits.totalPages === 3 && hits.page === 2,
+  'the pager keeps the server’s totals',
+);
+
+check(
+  hits.items[0].kind === 'person' && hits.items[0].person.id === 'p01' && !('memory' in hits.items[0]),
+  'a person hit is tagged and carries only a person',
+);
+check(
+  hits.items[1].kind === 'memory' && hits.items[1].memory.id === 'mm4' && !('person' in hits.items[1]),
+  'a memory hit is tagged and carries only a memory',
+);
+
+/* ------------------------------------------------------------------ */
+/* The M3 property, checked over everything recorded above            */
+/* ------------------------------------------------------------------ */
+
+const transcripts = calls.map((call) => {
+  const body = call.init.body === undefined ? '' : call.init.body;
+  return `${call.url} ${body}`;
+});
+
+check(
+  transcripts.every((t) => !/viewerId|authorId|createdById|ownerId/.test(t)),
+  'no request anywhere names a viewer, an author, a creator or an owner — the cookie does',
+);
+check(
+  transcripts.every((t) => !/token|bearer|authorization/i.test(t)),
+  'no request anywhere carries a token, a bearer header or an Authorization header',
+);
+
+/* ------------------------------------------------------------------ */
+/* The generation rule (unchanged since M1, still what the tree draws)  */
+/* ------------------------------------------------------------------ */
+
+const people = [
+  { id: 'p1', fullName: 'A', birthDate: '1935-01-01' },
+  { id: 'p2', fullName: 'B', birthDate: '1960-01-01' },
+  { id: 'p3', fullName: 'C', birthDate: '1985-01-01' },
+];
+const relations = [
+  { id: 'r1', fromId: 'p1', toId: 'p2', type: 'PARENT' },
+  { id: 'r2', fromId: 'p2', toId: 'p3', type: 'PARENT' },
+];
+
+const generations = computeGenerations(people, relations);
+check(
+  generations.size === 3 && generations.get('p1') === 0 && generations.get('p3') === 2,
+  'three generations from two parent links, oldest first',
+);
+
+const grouped = groupByGeneration(people, relations);
+check(
+  grouped.length === 3 && grouped[0].people[0].id === 'p1',
+  'and the tree view can group by them',
+);
+
+console.log(`  ${passed} service-layer checks passed`);
 
 if (problems.length > 0) {
   console.error('\n  service layer FAILED:');

@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
-import { getMyRole, getTree, listPeople, listRelations } from '../services/mockApi';
+import { getMyRole, getTree, listPeople, listRelations } from '../services/api';
 import { groupByGeneration } from '../services/generations';
-import type { Membership, Person, Relation, Tree } from '../mock/types';
+import type { Membership, Person, Relation, Tree } from '../types';
 import { useSessionStore } from './session';
 import { createAsync, run } from './asyncState';
 import type { AsyncState } from './asyncState';
@@ -34,7 +34,13 @@ export const useTreeStore = defineStore('openTree', () => {
       run(tree, () => getTree(treeId)),
       run(people, () => listPeople(treeId)),
       run(relations, () => listRelations(treeId)),
-      run(role, () => getMyRole(treeId, session.currentUserId)),
+      /* No session, no role to ask about — and asking the API for "the role
+         of nobody in this tree" would be a request it has no answer to. */
+      run(role, () =>
+        session.currentUserId === ''
+          ? Promise.resolve(null)
+          : getMyRole(treeId, session.currentUserId),
+      ),
     ]);
   }
 
@@ -69,11 +75,23 @@ export const useTreeStore = defineStore('openTree', () => {
    * than to the tree, so it is the one that has to be redone when the
    * identity changes. The tree, its people and its relations do not: they
    * are the same for everybody.
+   *
+   * Signing out drops the role instead of refetching it: there is no
+   * account to ask about, and a role left on screen would keep drawing
+   * controls for somebody who is no longer here.
    */
   watch(
     () => session.currentUserId,
     async () => {
       if (loadedTreeId.value === '') return;
+
+      if (session.currentUserId === '') {
+        role.data = null;
+        role.status = 'idle';
+        role.error = null;
+        return;
+      }
+
       await run(role, () => getMyRole(loadedTreeId.value, session.currentUserId));
     },
   );

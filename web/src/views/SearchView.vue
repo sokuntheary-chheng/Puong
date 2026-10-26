@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import AsyncState from '../components/AsyncState.vue';
 import { useStringParam, useStringQuery } from '../composables/useRouteString';
 import { useSearchStore } from '../stores/search';
-import type { SearchResult } from '../services/mockApi';
+import type { SearchResult } from '../services/api';
 
 /**
  * /trees/:treeId/search — the stretch feature.

@@ -7,11 +7,13 @@ import {
   HttpStatus,
   Param,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -19,7 +21,13 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { BAD_REQUEST, CONFLICT, NOT_FOUND } from '../common/api-responses';
+import {
+  BAD_REQUEST,
+  CONFLICT,
+  FORBIDDEN,
+  NOT_FOUND,
+} from '../common/api-responses';
+import { RequireRole, TreeRoleGuard } from '../auth/tree-role.guard';
 import { CreateRelationDto, RelationDto } from './dto/relations.dto';
 import { RelationsService } from './relations.service';
 
@@ -34,6 +42,12 @@ import { RelationsService } from './relations.service';
  * `FRIEND` is accepted here and never drawn by the canvas (FR-5.4) — the
  * data is recorded because the family knows it, even though a family tree
  * has no line for it.
+ *
+ * **Roles here.** Reading is VIEWER; drawing or removing an edge is
+ * CONTRIBUTOR or OWNER. There is no ownership check on a relation because
+ * there is no `createdById` to make one from (docs/design.md §2.3) — a role
+ * is all the specification gives us, and it is enough: an edge names two
+ * people either member can already see.
  */
 @ApiTags('relations')
 @Controller('trees/:treeId/relations')
@@ -41,6 +55,8 @@ export class RelationsController {
   constructor(private readonly relations: RelationsService) {}
 
   @Get()
+  @UseGuards(TreeRoleGuard)
+  @RequireRole('VIEWER')
   @ApiOperation({
     summary: 'List every relation in a tree',
     description:
@@ -54,16 +70,19 @@ export class RelationsController {
   }
 
   @Post()
+  @UseGuards(TreeRoleGuard)
+  @RequireRole('CONTRIBUTOR')
   @ApiOperation({
     summary: 'Link two people',
     description:
-      'Rejects a person linked to themselves (400), a link to somebody outside this tree (404), a parent link that would make somebody their own ancestor (400) and the same link twice (409).',
+      'CONTRIBUTOR or OWNER. Rejects a person linked to themselves (400), a link to somebody outside this tree (404), a parent link that would make somebody their own ancestor (400) and the same link twice (409).',
   })
   @ApiParam({ name: 'treeId', example: 't1' })
   @ApiCreatedResponse({ type: RelationDto })
   @ApiBadRequestResponse(BAD_REQUEST)
   @ApiNotFoundResponse(NOT_FOUND)
   @ApiConflictResponse(CONFLICT)
+  @ApiForbiddenResponse(FORBIDDEN)
   create(
     @Param('treeId') treeId: string,
     @Body() dto: CreateRelationDto,
@@ -72,15 +91,19 @@ export class RelationsController {
   }
 
   @Delete(':relationId')
+  @UseGuards(TreeRoleGuard)
+  @RequireRole('CONTRIBUTOR')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Remove a relation',
-    description: 'The two people stay in the tree; only the link goes.',
+    description:
+      'CONTRIBUTOR or OWNER (FR-5.5). The two people stay in the tree; only the link goes.',
   })
   @ApiParam({ name: 'treeId', example: 't1' })
   @ApiParam({ name: 'relationId', example: 'r01' })
   @ApiNoContentResponse({ description: 'Deleted. Nothing in the body.' })
   @ApiNotFoundResponse(NOT_FOUND)
+  @ApiForbiddenResponse(FORBIDDEN)
   remove(
     @Param('treeId') treeId: string,
     @Param('relationId') relationId: string,

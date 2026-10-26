@@ -2,11 +2,20 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+
+  /**
+   * The session arrives as a cookie, so the request has to have one before
+   * any route — or the global guard — can read it. Express does not parse
+   * cookies by default; without this line `req.cookies` is undefined and
+   * every request looks signed out.
+   */
+  app.use(cookieParser());
 
   const config = app.get(ConfigService);
   const port = config.get<number>('PORT', 3000);
@@ -56,10 +65,21 @@ async function bootstrap(): Promise<void> {
     .setTitle('Puong API')
     .setDescription(
       'A shared family archive — people, relations and memories, one tree at a time. ' +
-        'Authentication is not part of this milestone: M2 documents the resource contract, ' +
-        'and M3 adds the session, the guards and the ownership checks that read the caller.',
+        'Every endpoint except `POST /auth/register` and `POST /auth/login` needs a ' +
+        'session: sign in there and the browser keeps the session as an `httpOnly`, ' +
+        '`SameSite=Strict` cookie named `puong_session`. Routes under a tree are then ' +
+        'checked against your role in that tree, and ownership (who created a person, ' +
+        'who wrote a memory) is checked against the row itself.',
     )
     .setVersion('1.0')
+    .addCookieAuth('puong_session', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'puong_session',
+      description:
+        'Set by `/auth/login`. Paste a value here to try a logged-in route from this page.',
+    })
+    .addTag('auth', 'Registration, login, logout, and who is signed in.')
     .addTag(
       'users',
       'Accounts. Passwords are hashed with bcrypt and never returned.',

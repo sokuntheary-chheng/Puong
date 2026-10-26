@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import type { Role } from '@prisma/client';
 import { assertSomeField } from '../common/assert-some-field';
 import { isMissingRecord } from '../common/is-missing-record';
 import { text } from '../common/text';
@@ -48,9 +53,20 @@ export class PeopleService {
     return person;
   }
 
-  async create(treeId: string, dto: CreatePersonDto): Promise<PersonDto> {
+  /**
+   * Adds a person, recorded as created by the caller.
+   *
+   * `createdById` comes from the session (FR-4.4 makes it the ownership
+   * column that decides who may edit this person later), so it is set here
+   * rather than read from the body: provenance that a client can type in is
+   * not provenance.
+   */
+  async create(
+    treeId: string,
+    dto: CreatePersonDto,
+    createdById: string,
+  ): Promise<PersonDto> {
     await this.assertTree(treeId);
-    await this.assertUser(dto.createdById);
 
     try {
       return await this.prisma.person.create({
@@ -64,7 +80,7 @@ export class PeopleService {
           isLiving: dto.isLiving ?? true,
           photoUrl: text(dto.photoUrl) ?? null,
           bio: text(dto.bio) ?? null,
-          createdById: dto.createdById,
+          createdById,
         },
       });
     } catch (error) {
@@ -79,9 +95,15 @@ export class PeopleService {
     treeId: string,
     personId: string,
     dto: UpdatePersonDto,
+    actorId: string,
+    actorRole: Role,
   ): Promise<PersonDto> {
     assertSomeField(dto);
-    await this.get(treeId, personId);
+    /* One read, two questions: is this person in this tree, and did the
+       caller create them? The role guard has already settled "is a member
+       with at least CONTRIBUTOR"; what it cannot see is this row's
+       `createdById`, which is the ownership half of FR-4.4. */
+    this.assertMayEdit(await this.get(treeId, personId), actorId, actorRole);
 
     try {
       return await this.prisma.person.update({
@@ -115,8 +137,13 @@ export class PeopleService {
    * schema cascades) — a dangling edge would draw a connector to nobody, and
    * a memory with no subject is not a memory of anything.
    */
-  async remove(treeId: string, personId: string): Promise<void> {
-    await this.get(treeId, personId);
+  async remove(
+    treeId: string,
+    personId: string,
+    actorId: string,
+    actorRole: Role,
+  ): Promise<void> {
+    this.assertMayEdit(await this.get(treeId, personId), actorId, actorRole);
 
     try {
       await this.prisma.person.delete({ where: { id: personId } });
@@ -130,6 +157,25 @@ export class PeopleService {
     }
   }
 
+  /**
+   * FR-4.4 / FR-4.5 — "you created it, or you own the tree".
+   *
+   * A contributor may edit and delete their own additions and nobody else's;
+   * an owner curates the whole tree. This is checked against the row that
+   * was just loaded, because `createdById` does not exist in the path.
+   */
+  private assertMayEdit(
+    person: PersonDto,
+    actorId: string,
+    actorRole: Role,
+  ): void {
+    if (person.createdById === actorId) return;
+    if (actorRole === 'OWNER') return;
+    throw new ForbiddenException(
+      'Only the person who added this record, or the owner of the tree, may change it.',
+    );
+  }
+
   private async assertTree(treeId: string): Promise<void> {
     const tree = await this.prisma.tree.findUnique({
       where: { id: treeId },
@@ -137,16 +183,6 @@ export class PeopleService {
     });
     if (tree === null) {
       throw new NotFoundException(`tree ${treeId} was not found.`);
-    }
-  }
-
-  private async assertUser(userId: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true },
-    });
-    if (user === null) {
-      throw new NotFoundException(`user ${userId} was not found.`);
     }
   }
 }

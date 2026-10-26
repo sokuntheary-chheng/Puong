@@ -7,7 +7,7 @@ import { useStringParam, useStringQuery } from '../composables/useRouteString';
 import { useMemoriesStore } from '../stores/memories';
 import { useSessionStore } from '../stores/session';
 import { useTreeStore } from '../stores/tree';
-import type { Person } from '../mock/types';
+import type { Person } from '../types';
 
 /**
  * /trees/:treeId — the family tree, and the screen this application is

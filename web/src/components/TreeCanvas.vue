@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue';
-import type { Person, Relation } from '../mock/types';
+import type { Person, Relation } from '../types';
 
 /**
  * The family-tree viewport: where the graph is drawn and moved.

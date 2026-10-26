@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { SEARCH_PAGE_SIZE, search as searchApi } from '../services/mockApi';
-import type { Page, SearchResult } from '../services/mockApi';
-import type { MemoryVisibility } from '../mock/types';
-import { useSessionStore } from './session';
+import { SEARCH_PAGE_SIZE, search as searchApi } from '../services/api';
+import type { Page, SearchResult } from '../services/api';
+import type { MemoryVisibility } from '../types';
 import { createAsync, run } from './asyncState';
 
 function emptyPage(): Page<SearchResult> {
@@ -19,8 +18,6 @@ function emptyPage(): Page<SearchResult> {
  * which is the part that has to be fetched.
  */
 export const useSearchStore = defineStore('search', () => {
-  const session = useSessionStore();
-
   const result = createAsync<Page<SearchResult>>(emptyPage());
 
   /** The query these results belong to, so a stale result is recognisable. */
@@ -34,9 +31,10 @@ export const useSearchStore = defineStore('search', () => {
     visibility?: MemoryVisibility;
   }): Promise<void> {
     forQuery.value = input.query;
-    await run(result, () =>
-      searchApi({ ...input, viewerId: session.currentUserId }),
-    );
+    /* No viewer is passed: FR-6.6 is applied by the API against the session
+       cookie, so a search cannot be used to find what the list would not
+       show — and cannot be talked into showing it either. */
+    await run(result, () => searchApi(input));
   }
 
   function reset(): void {

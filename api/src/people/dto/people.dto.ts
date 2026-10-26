@@ -1,9 +1,4 @@
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-  OmitType,
-  PartialType,
-} from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Gender } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
@@ -93,19 +88,14 @@ export class CreatePersonDto {
   @MaxLength(4000)
   bio?: string;
 
-  @ApiProperty({
-    example: 'u1',
-    description:
-      'Who is adding this person. Stored as provenance on the row — M3 will read it as the session’s user instead of trusting the body.',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'must not be empty.' })
-  createdById: string;
+  /* No `createdById` here, and that is the point: provenance is read from
+     the session by the controller. M2 took it in the body because there was
+     no session to read — a field that says who you are is a field that can
+     be filled in with somebody else's name. It stays on `PersonDto`, where
+     it is written by the server and returned to everybody. */
 }
 
-export class UpdatePersonDto extends PartialType(
-  OmitType(CreatePersonDto, ['createdById'] as const),
-) {}
+export class UpdatePersonDto extends PartialType(CreatePersonDto) {}
 
 export class PersonDto {
   @ApiProperty({ example: 'p09' })

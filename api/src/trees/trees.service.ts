@@ -13,20 +13,16 @@ export class TreesService {
   /**
    * FR-1.2 / FR-1.3 — the trees a member sees.
    *
-   * With `memberId`, only trees where that user holds an **ACTIVE**
-   * membership: an invitation that has not been accepted (FR-3.5) must not
-   * put a tree into anyone's list, and filtering in the query rather than in
-   * the view is what keeps that rule in one place.
+   * Filtered by an **ACTIVE** membership in the query: an invitation that
+   * has not been accepted (FR-3.5) must not put a tree into anyone's list,
+   * and filtering in the query rather than in the view is what keeps that
+   * rule in one place.
    *
-   * Without `memberId` every tree is returned. M2 has no authentication, so
-   * this is the "who is asking" the API cannot yet answer; M3 narrows it to
-   * the session's user and the open question disappears.
+   * The account is always the caller's (`AuthGuard`), never a parameter —
+   * M2 accepted `?memberId=` because there was no session to read, and that
+   * was an open invitation to ask for somebody else's list.
    */
-  async list(memberId?: string): Promise<TreeDto[]> {
-    if (memberId === undefined || memberId === '') {
-      return this.prisma.tree.findMany({ orderBy: { createdAt: 'asc' } });
-    }
-
+  list(memberId: string): Promise<TreeDto[]> {
     return this.prisma.tree.findMany({
       where: {
         memberships: { some: { userId: memberId, status: 'ACTIVE' } },
@@ -47,30 +43,27 @@ export class TreesService {
    * Two writes, one transaction: if the membership failed the tree would have
    * to be rolled back by hand, and a tree with no owner cannot answer "who
    * may do this" for anybody.
+   *
+   * `ownerId` is the caller, passed in by the controller — no lookup, because
+   * the account was authenticated to get here, and no field, because a body
+   * that could name an owner would let anybody create a tree somebody else
+   * owns.
    */
-  async create(dto: CreateTreeDto): Promise<TreeDto> {
-    const owner = await this.prisma.user.findUnique({
-      where: { id: dto.ownerId },
-      select: { id: true },
-    });
-    if (owner === null) {
-      throw new NotFoundException(`user ${dto.ownerId} was not found.`);
-    }
-
+  create(dto: CreateTreeDto, ownerId: string): Promise<TreeDto> {
     return this.prisma.$transaction(async (tx) => {
       const tree = await tx.tree.create({
         data: {
           name: dto.name.trim(),
           description: dto.description?.trim() ?? null,
           coverPhotoUrl: dto.coverPhotoUrl ?? null,
-          ownerId: dto.ownerId,
+          ownerId,
         },
       });
 
       await tx.membership.create({
         data: {
           treeId: tree.id,
-          userId: dto.ownerId,
+          userId: ownerId,
           role: 'OWNER',
           status: 'ACTIVE',
           acceptedAt: new Date(),

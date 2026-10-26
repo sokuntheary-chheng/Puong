@@ -1,9 +1,15 @@
 /**
  * The persisted model, as specified in docs/SRS.md §3.3.
  *
- * These types describe `src/mock/db.json`. The same shapes become the Prisma
- * models at M2, so the field names are chosen to match the specification
- * exactly rather than to suit the mock.
+ * These are the shapes the API returns — `docs/api.md` is the contract, and
+ * the DTOs under `api/src` generate it. They started life describing the
+ * M1 mock's `src/mock/db.json`, which is still the seed dataset the API is
+ * loaded from, and that is why the field names match the specification
+ * exactly rather than the transport.
+ *
+ * **There is no `passwordHash` here.** A digest never leaves the server: the
+ * DTO that answers `/auth/me` and `/users` has no such field, so the type
+ * cannot claim one.
  */
 
 /** FR-3.6 — the role a member holds in one tree. Scoped per tree, never per account. */
@@ -21,12 +27,6 @@ export type MemoryVisibility = 'PRIVATE' | 'TREE';
 export interface User {
   id: string;
   email: string;
-  /**
-   * Not a real hash. Authentication is M3; the mock layer never reads this
-   * value, and it is deliberately not shaped like a bcrypt digest so that it
-   * cannot be mistaken for one in Git.
-   */
-  passwordHash: string;
   displayName: string;
   createdAt: string;
 }
@@ -34,7 +34,7 @@ export interface User {
 export interface Tree {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   coverPhotoUrl: string | null;
   ownerId: string;
   /** FR-9.1 — null until an owner nominates a successor. */
@@ -86,14 +86,4 @@ export interface Memory {
   photoUrl: string | null;
   visibility: MemoryVisibility;
   createdAt: string;
-}
-
-/** The whole persisted model — six tables, as specified. */
-export interface Database {
-  users: User[];
-  trees: Tree[];
-  memberships: Membership[];
-  people: Person[];
-  relations: Relation[];
-  memories: Memory[];
 }
