@@ -1,0 +1,179 @@
+// Puong — the persisted model, as specified in docs/SRS.md §3.3.
+//
+// Every model is the exact shape of the interface with the same name in
+// web/src/mock/types.ts, because that mock is what M1 shipped against: if
+// the columns and the TypeScript types agree, M3 is a change of transport
+// (fetch instead of the mock) rather than a change of meaning.
+//
+// Two deliberate choices worth stating here, since they look like shortcuts:
+//
+// - **Date-only fields are `String`, holding a calendar date (`1985-04-03`).**
+//   `birthDate`, `deathDate` and `happenedAt` are dates without a time or a
+//   zone — a birthday is the same birthday in Phnom Penh and in Lisbon. Storing
+//   them as `timestamp` would force the API to invent a midnight in some zone
+//   and then strip it again on the way out, and the memory form binds them
+//   straight into `<input type="date">`, which wants `YYYY-MM-DD`. They are
+//   validated as exactly that shape by the DTOs, so the format is enforced by
+//   the API rather than trusted.
+// - **Timestamps that do carry a time (`createdAt`, `invitedAt`) are `DateTime`**
+//   and are returned as ISO-8601 UTC, which is what the mock returns too.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// FR-3.6 — the role a member holds in one tree. Scoped per tree, never per account.
+enum Role {
+  OWNER
+  CONTRIBUTOR
+  VIEWER
+}
+
+/// FR-3.2 / FR-3.3 / FR-3.5
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  REVOKED
+}
+
+/// FR-5.1
+enum RelationType {
+  PARENT
+  SPOUSE
+  FRIEND
+  SIBLING
+}
+
+/// FR-6.6
+enum MemoryVisibility {
+  PRIVATE
+  TREE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  createdAt    DateTime @default(now())
+
+  /// The trees this user created. A tree keeps its owner even if the owner
+  /// leaves the family story, so the relation is restrictive rather than
+  /// cascading: there is deliberately no delete-user endpoint in M2.
+  ownedTrees       Tree[]       @relation("TreeOwner")
+  successorOf      Tree[]       @relation("TreeSuccessor")
+  memberships      Membership[]
+  createdPeople    Person[]     @relation("PersonCreator")
+  authoredMemories Memory[]     @relation("MemoryAuthor")
+}
+
+model Tree {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  coverPhotoUrl String?
+  ownerId       String
+  successorId   String?
+  createdAt     DateTime @default(now())
+
+  owner       User         @relation("TreeOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  successor   User?        @relation("TreeSuccessor", fields: [successorId], references: [id], onDelete: SetNull)
+  memberships Membership[]
+  people      Person[]
+  relations   Relation[]
+  memories    Memory[]
+}
+
+/// The join table that carries the answer to "what may this user do in this
+/// tree" — see PROPOSAL.md, "Why these relations". One row per (tree, user).
+model Membership {
+  id         String           @id @default(cuid())
+  treeId     String
+  userId     String
+  role       Role
+  status     MembershipStatus
+  invitedAt  DateTime?
+  acceptedAt DateTime?
+
+  tree Tree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([treeId, userId])
+  @@index([userId])
+}
+
+model Person {
+  id        String   @id @default(cuid())
+  treeId    String
+  fullName  String
+  nickname  String?
+  gender    Gender?
+  /// `YYYY-MM-DD`, or null when the family does not know.
+  birthDate String?
+  /// `YYYY-MM-DD`, or null for everyone still living.
+  deathDate String?
+  isLiving  Boolean  @default(true)
+  photoUrl  String?
+  bio       String?
+  createdAt DateTime @default(now())
+
+  tree          Tree       @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  createdBy     User       @relation("PersonCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdById   String
+  fromRelations Relation[] @relation("RelationFrom")
+  toRelations   Relation[] @relation("RelationTo")
+  memories      Memory[]
+
+  @@index([treeId])
+}
+
+/// One table with a `type` column covers parent, spouse, friend and sibling —
+/// see PROPOSAL.md, "Why these relations". A row is unique per
+/// (tree, from, to, type), which is what makes "the same link cannot be
+/// created twice" a constraint rather than a check in application code.
+model Relation {
+  id     String       @id @default(cuid())
+  treeId String
+  fromId String
+  toId   String
+  type   RelationType
+
+  tree Tree   @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  from Person @relation("RelationFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to   Person @relation("RelationTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([treeId, fromId, toId, type])
+  @@index([treeId])
+}
+
+model Memory {
+  id         String           @id @default(cuid())
+  treeId     String
+  personId   String
+  authorId   String
+  title      String
+  body       String
+  /// `YYYY-MM-DD`, or null for a memory that belongs to no particular year.
+  happenedAt String?
+  photoUrl   String?
+  visibility MemoryVisibility
+  createdAt  DateTime         @default(now())
+
+  tree   Tree   @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  author User   @relation("MemoryAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([treeId])
+  @@index([personId])
+}

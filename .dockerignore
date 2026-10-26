@@ -1,0 +1,24 @@
+# Everything that should never reach a Docker build context.
+# Keeps images small and, more importantly, keeps secrets and dependencies
+# out of them: .env is in here, so a build cannot bake it in.
+
+.git
+.gitignore
+node_modules
+**/node_modules
+dist
+**/dist
+coverage
+**/coverage
+.env
+**/.env
+.env.*
+!**/.env.example
+
+# Build artefacts and documents that no image needs.
+docs
+wind
+*.md
+!README.md
+**/*.log
+web/.checks

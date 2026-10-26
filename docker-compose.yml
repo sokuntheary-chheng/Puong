@@ -1,0 +1,84 @@
+# Puong — the whole stack.
+#
+#   docker compose up            # database + API + web
+#   docker compose run --rm seed # load the demo family (once)
+#   docker compose down -v       # stop, and throw the database away
+#
+# Services
+#   db     PostgreSQL 16, data kept in a named volume so `down` does not
+#          lose the family. Only the db port is published, and only so the
+#          API on your host can reach it during development.
+#   api    NestJS. Runs migrations on start; the seed is a separate, opt-in
+#          task (below) because seeding *replaces* the data with the demo
+#          family and should not happen behind your back on a restart.
+#   web    Vite build served by nginx, /api proxied to the api service.
+#
+# This file is written for M2/M5. The development machine this milestone was
+# built on has no Docker, so the API was developed and verified against a
+# local PostgreSQL 16 (see api/.env.example); the same commands inside the
+# containers are what `docker compose up` runs.
+
+name: puong
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      # Dev-only defaults: override in a root `.env` (gitignored) or in your
+      # shell. Nothing here is a secret worth keeping — see .env.example.
+      POSTGRES_USER: ${POSTGRES_USER:-puong}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-puong_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-puong}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - puong-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-puong}:${POSTGRES_PASSWORD:-puong_dev_password}@db:5432/${POSTGRES_DB:-puong}?schema=public
+      PORT: ${PORT:-3000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      JWT_SECRET: ${JWT_SECRET:-replace-me-before-this-leaves-your-machine}
+    ports:
+      - '${API_PORT:-3000}:3000'
+
+  # Opt-in: `docker compose run --rm seed`. Loads web/src/mock/db.json —
+  # the same family the prototype displays — with bcrypt-hashed passwords.
+  seed:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    profiles: ['seed']
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-puong}:${POSTGRES_PASSWORD:-puong_dev_password}@db:5432/${POSTGRES_DB:-puong}?schema=public
+    command: npx prisma db seed
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '${WEB_PORT:-8080}:80'
+
+volumes:
+  puong-db:
