@@ -92,7 +92,7 @@ and the second places both.
 
 | Case | Generation | Why |
 |---|---|---|
-| Founder — no parents, no links | `0` | Oldest column. Correct. |
+| Founder — no parents, no links | `0` | Oldest generation — the top band. Correct. |
 | A child whose **father** has parents recorded and whose **mother** is a parentless in-law | `2` | The in-law is a root at `0`, so a shortest-path search would give `1` and place the child **beside their own father**. One more than the *latest* parent gives `2`. |
 | In-law married to a generation-2 person, no parents recorded | `2` | Adopts the spouse's generation; sits beside their spouse. |
 | Same person, also a friend of the generation-0 founder | `2` | Takes the **highest** of the two, so never above their spouse. |
@@ -106,8 +106,16 @@ and the second places both.
   with "one below the **highest** generation among their parents" — the shortest-path reading
   places a child of a parentless in-law beside their own father (see §1.2).
 - **Glossary rule 1 (Generation)** states the same rule in one line.
+- **FR-8.1** keeps its grouping rule — one group per generation, each person exactly once —
+  but the tree-first screen draws each generation as a **horizontal band**, oldest at the top
+  and descendants below, because that is how the reference layout reads: a reader follows a
+  family downward, and a wide generation uses the width of the viewport rather than the
+  height of the page. "Column" names the grouping, not the rotation. `TreeCanvas.vue` places
+  one band per generation, keeps couples side by side inside the band, and centres children
+  under their parents — the placement rule above is untouched.
 
-Nothing else in `docs/SRS.md` describes generation placement.
+Nothing else in `docs/SRS.md` describes generation placement, and nothing about *where* a
+person sits changes: only the axis the bands are drawn along.
 
 ### 1.6 Tests to write at M2
 

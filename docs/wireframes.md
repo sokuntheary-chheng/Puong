@@ -47,11 +47,18 @@ The numbered discs on each sheet are keyed to the notes below.
 
 ![Home wireframe](wireframes/home.svg)
 
-1. **`puong.dev/`** — route `/`, no parameter.
-2. **One card per tree** → `/trees/:treeId`. The member sees the trees they belong to
+1. **`puong.dev/`** — route `/`, no parameter. The route guard may take a member with
+   exactly one active tree straight into the workspace instead (design.md §3).
+2. **"Add a family"** — the slot the reference layout gives a primary action. M1 has no
+   create-tree flow behind it (`mockApi` can list and read trees, not make one), so the
+   button is drawn disabled and says why rather than looking ready to work.
+3. **Three counts** — Trees / People / Memories, totals of every tree the member belongs to,
+   drawn from the same three async states as the list: an unknown total is a dash, never a
+   `0` that looks like an answer.
+4. **One card per tree** → `/trees/:treeId`. The member sees the trees they belong to
    (FR-1.2, FR-1.3). The second tree is seeded empty on purpose, so the empty state of
    sheet 7 has a screen that reaches it (FR-8.4).
-3. **Pointer to sheet 7** — this same list in its loading, empty and error states.
+5. **Pointer to sheet 7** — this same list in its loading, empty and error states.
 
 ---
 
@@ -64,19 +71,34 @@ The numbered discs on each sheet are keyed to the notes below.
    survive a refresh, work with the back button and be sendable as a link
    (`design.md` §3). Selecting a card is a route push, so the URL and the screen cannot
    disagree.
-3. **Generation columns**, placed by the rule in `design.md` §1 / FR-5.6: a parentless
-   person starts at 0, a child sits one below the highest of their parents, and the two
-   steps repeat until stable. `scripts/check-generations.mjs` asserts the resulting
+3. **The screen's one primary action** — "Add a memory", the working, role-gated write M1
+   has. It needs a person (FR-6.2), so with nobody selected it points at the first person
+   in the tree rather than at a dead end; a viewer is not offered it at all (FR-3.6).
+4. **Three quiet counts** — members, generations and memories of *this* tree. They sit
+   above the graph, not instead of it: the tree keeps the visual weight.
+5. **Role line** — FR-3.6. A viewer sees *"you can read, not write"* here and is not
+   offered any write control anywhere on the screen, including the button in callout 3.
+6. **The toolbar** — the two views on the left, and on the right the zoom out, the current
+   percentage, the zoom in and fit-to-screen. Every control moves the graph; the percentage
+   is reported up by the canvas, so the two cannot disagree.
+7. **"not linked yet"** — a person with no relations at all. Story 5 exists to fix exactly
+   this, and person `p23` (Apple Bottom) is the fixture that keeps the flag from being dead
+   code. Friendship is never drawn as a family line either: a friend is listed on the
+   person's page, not wired into the graph.
+8. **Bands and connectors** — one band per generation, oldest at the top, placed by the
+   rule in `design.md` §1 / FR-5.6: a parentless person starts at 0, a child sits one below
+   the highest of their parents, and the two steps repeat until stable. Every line is drawn
+   from a relation record — parent elbows, couple bridges, dashed siblings only where no
+   shared parent says it already. `scripts/check-generations.mjs` asserts the resulting
    counts, and the app computes the identical layout.
-4. **Selected card** — accent outline and `aria-pressed`, so the selection is visible to a
-   screen reader, not only to the eye.
-5. **"not linked yet"** — a person with no relations at all. Story 5 exists to fix exactly
-   this, and person `p23` (Apple Bottom) is the fixture that keeps the flag from being
-   dead code.
-6. **Role line** — FR-3.6. A viewer sees *"you can read, not write"* here and is not
-   offered any write control anywhere on the screen.
-7. **The panel links to the detail page** rather than opening a modal: the person's own
-   URL is the thing worth having, and a modal would throw it away.
+9. **Selected card** — accent border, `#F7E7DE` wash and `aria-pressed`, so the selection is
+   visible to a screen reader, not only to the eye.
+10. **The panel links to the detail page** rather than opening a modal: the person's own
+    URL is the thing worth having, and a modal would throw it away. It sits inside the
+    workspace, under the graph, because it is about the graph's selection.
+11. **Two supporting cards** — Family memories switches to the tree's memory list, and Life
+    events says *Not in M1 yet* rather than inventing birthdays: a card must never imply a
+    feature behind it that does not exist.
 
 ---
 

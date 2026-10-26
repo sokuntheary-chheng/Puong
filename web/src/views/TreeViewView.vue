@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AsyncState from '../components/AsyncState.vue';
+import TreeCanvas from '../components/TreeCanvas.vue';
 import { useStringParam, useStringQuery } from '../composables/useRouteString';
 import { useMemoriesStore } from '../stores/memories';
 import { useSessionStore } from '../stores/session';
@@ -9,9 +10,13 @@ import { useTreeStore } from '../stores/tree';
 import type { Person } from '../mock/types';
 
 /**
- * /trees/:treeId — the family-tree canvas.
+ * /trees/:treeId — the family tree, and the screen this application is
+ * really about.
  *
- * This is the M1 checklist's detail page with a route parameter.
+ * The page is the frame; the graph is `TreeCanvas`. Everything here is
+ * one of the reference's five regions — header, three counts, workspace
+ * with its toolbar, and the two supporting cards below it — and none of
+ * them knows how the graph is laid out or moved.
  *
  * Three things are read from the URL rather than from the store:
  *
@@ -22,9 +27,9 @@ import type { Person } from '../mock/types';
  * Selecting a person is therefore a route push, not a store commit: the two
  * must not be able to disagree.
  *
- * The two tabs are *not* route state — they are a way of looking at one
- * tree, not a fact about it (docs/m1-explain.md), so they live here and die
- * with the page.
+ * The two tabs, the zoom level and the pan position are *not* route state —
+ * they are ways of looking at one tree, not facts about it
+ * (docs/m1-explain.md), so they live here and die with the page.
  */
 const store = useTreeStore();
 const memories = useMemoriesStore();
@@ -39,6 +44,28 @@ const tab = ref<'tree' | 'memories'>('tree');
 
 function showTab(next: 'tree' | 'memories'): void {
   tab.value = next;
+}
+
+/* ---- the toolbar's zoom controls ------------------------------------ */
+
+const canvas = ref<InstanceType<typeof TreeCanvas> | null>(null);
+const zoomPercent = ref(100);
+
+/** Nothing to zoom while the tree is loading, empty, or not on screen. */
+const canZoom = computed(
+  () => tab.value === 'tree' && store.loadState.status === 'ready',
+);
+
+function zoomIn(): void {
+  canvas.value?.zoomBy(1.2);
+}
+
+function zoomOut(): void {
+  canvas.value?.zoomBy(1 / 1.2);
+}
+
+function fitTree(): void {
+  canvas.value?.fit();
 }
 
 onMounted(() => {
@@ -84,18 +111,8 @@ function statValue(ready: boolean, count: number): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* The tree                                                            */
+/* Selecting a person                                                  */
 /* ------------------------------------------------------------------ */
-
-/** People with no relation to anyone — story 4 creates them, story 5 links them. */
-const unlinkedIds = computed(() => {
-  const linked = new Set<string>();
-  for (const relation of store.relations.data) {
-    linked.add(relation.fromId);
-    linked.add(relation.toId);
-  }
-  return linked;
-});
 
 const selectedPerson = computed(() =>
   selectedPersonId.value === '' ? null : store.find(selectedPersonId.value),
@@ -125,27 +142,6 @@ function select(personId: string): void {
   });
 }
 
-function yearOf(date: string | null): string {
-  return date === null ? '' : date.slice(0, 4);
-}
-
-function lifespan(person: { birthDate: string | null; deathDate: string | null }): string {
-  const born = yearOf(person.birthDate);
-  const died = yearOf(person.deathDate);
-  if (born === '' && died === '') return '';
-  /* Tight, like the reference's "1938–2012" — a card has no room for
-     padding around a dash, and a lone year still reads as a year. */
-  return `${born || '?'}–${died || ''}`.trim();
-}
-
-/** The two initials a card wears in its avatar circle. */
-function initials(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/).filter((part) => part.length > 0);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
-  return `${first}${last}`.toUpperCase();
-}
-
 function personName(personId: string): string {
   return store.find(personId)?.fullName ?? personId;
 }
@@ -160,6 +156,8 @@ function personName(personId: string): string {
       / {{ store.tree.data?.name ?? treeId }}
     </p>
 
+    <!-- 1. the family title: what this tree is, and the one thing you
+         can do with it -->
     <header class="head">
       <div class="head__text">
         <h1>{{ store.tree.data?.name ?? 'Family tree' }}</h1>
@@ -189,10 +187,26 @@ function personName(personId: string): string {
           params: { treeId, personId: memoryTarget.id },
         }"
       >
+        <svg
+          class="head__actionicon"
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+        </svg>
         Add a memory
       </RouterLink>
     </header>
 
+    <!-- 2. three quiet counts — supporting information, not the feature -->
     <dl class="stats">
       <div class="stat">
         <dt class="stat__label">
@@ -220,36 +234,173 @@ function personName(personId: string): string {
       </div>
     </dl>
 
+    <!-- 3. the workspace: toolbar above, graph below -->
     <div class="board">
-      <div
-        class="board__tabs"
-        role="tablist"
-        aria-label="How to look at this tree"
-      >
-        <button
-          id="tab-tree"
-          type="button"
-          role="tab"
-          class="board__tab"
-          :class="{ 'board__tab--on': tab === 'tree' }"
-          :aria-selected="tab === 'tree'"
-          aria-controls="tree-panel"
-          @click="showTab('tree')"
+      <div class="board__bar">
+        <div
+          class="board__tabs"
+          role="tablist"
+          aria-label="How to look at this tree"
         >
-          Family tree
-        </button>
-        <button
-          id="tab-memories"
-          type="button"
-          role="tab"
-          class="board__tab"
-          :class="{ 'board__tab--on': tab === 'memories' }"
-          :aria-selected="tab === 'memories'"
-          aria-controls="tree-panel"
-          @click="showTab('memories')"
+          <button
+            id="tab-tree"
+            type="button"
+            role="tab"
+            class="board__tab"
+            :class="{ 'board__tab--on': tab === 'tree' }"
+            :aria-selected="tab === 'tree'"
+            aria-controls="tree-panel"
+            @click="showTab('tree')"
+          >
+            <svg
+              class="board__icon"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect
+                x="9"
+                y="2"
+                width="6"
+                height="5"
+                rx="1.5"
+              />
+              <rect
+                x="3"
+                y="17"
+                width="6"
+                height="5"
+                rx="1.5"
+              />
+              <rect
+                x="15"
+                y="17"
+                width="6"
+                height="5"
+                rx="1.5"
+              />
+              <path d="M12 7v4M6 17v-3h12v3" />
+            </svg>
+            Family tree
+          </button>
+          <button
+            id="tab-memories"
+            type="button"
+            role="tab"
+            class="board__tab"
+            :class="{ 'board__tab--on': tab === 'memories' }"
+            :aria-selected="tab === 'memories'"
+            aria-controls="tree-panel"
+            @click="showTab('memories')"
+          >
+            <svg
+              class="board__icon"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect
+                x="3"
+                y="5"
+                width="18"
+                height="14"
+                rx="2"
+              />
+              <path d="m3 16 5-4 4 3 3-3 6 5" />
+              <circle
+                cx="8.5"
+                cy="9.5"
+                r="1.5"
+              />
+            </svg>
+            Memories
+          </button>
+        </div>
+
+        <!-- These move the graph; they are not decoration. -->
+        <div
+          class="board__zoom"
+          role="group"
+          aria-label="Zoom the tree"
         >
-          Memories
-        </button>
+          <button
+            type="button"
+            class="board__zoombtn"
+            aria-label="Zoom out"
+            :disabled="!canZoom"
+            @click="zoomOut"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+            </svg>
+          </button>
+          <span
+            class="board__level"
+            aria-live="polite"
+          >{{ zoomPercent }}%</span>
+          <button
+            type="button"
+            class="board__zoombtn"
+            aria-label="Zoom in"
+            :disabled="!canZoom"
+            @click="zoomIn"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="board__zoombtn"
+            aria-label="Fit the tree to the screen"
+            :disabled="!canZoom"
+            @click="fitTree"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div
@@ -270,60 +421,16 @@ function personName(personId: string): string {
             </p>
           </template>
 
-          <!-- The canvas: one block per generation, oldest first, with an
-               arrow leading down to the next one. -->
-          <div
+          <TreeCanvas
             v-if="tab === 'tree'"
-            class="canvas"
-          >
-            <div
-              v-for="(column, index) in store.generations"
-              :key="column.generation"
-              class="column"
-            >
-              <h2 class="column__title">
-                Generation {{ column.generation + 1 }}
-              </h2>
-
-              <ul class="column__list">
-                <li
-                  v-for="person in column.people"
-                  :key="person.id"
-                >
-                  <button
-                    type="button"
-                    class="card"
-                    :class="{ 'card--selected': person.id === selectedPersonId }"
-                    :aria-pressed="person.id === selectedPersonId ? 'true' : 'false'"
-                    @click="select(person.id)"
-                  >
-                    <span
-                      class="card__avatar"
-                      aria-hidden="true"
-                    >{{ initials(person.fullName) }}</span>
-                    <span class="card__name">{{ person.fullName }}</span>
-                    <span
-                      v-if="person.nickname"
-                      class="card__nick"
-                    >{{ person.nickname }}</span>
-                    <span class="card__dates">{{ lifespan(person) }}</span>
-                    <span
-                      v-if="!unlinkedIds.has(person.id)"
-                      class="card__flag"
-                    >
-                      not linked yet
-                    </span>
-                  </button>
-                </li>
-              </ul>
-
-              <span
-                v-if="index < store.generations.length - 1"
-                class="arrow"
-                aria-hidden="true"
-              >↓</span>
-            </div>
-          </div>
+            :key="treeId"
+            ref="canvas"
+            :generations="store.generations"
+            :relations="store.relations.data"
+            :selected-id="selectedPersonId"
+            @select="select"
+            @zoom-change="zoomPercent = $event"
+          />
 
           <!-- The same memory list the person page shows, widened to the
                whole tree: one endpoint, one comparator, one store. -->
@@ -421,36 +528,75 @@ function personName(personId: string): string {
       </div>
     </div>
 
-    <button
-      type="button"
-      class="promo"
-      :class="{ 'promo--on': tab === 'memories' }"
-      :aria-pressed="tab === 'memories'"
-      @click="showTab('memories')"
-    >
-      <span
-        class="promo__icon"
-        aria-hidden="true"
+    <!-- 4. two supporting cards: one that works, one that is honest about
+         not existing yet -->
+    <div class="promos">
+      <button
+        type="button"
+        class="promo"
+        :class="{ 'promo--on': tab === 'memories' }"
+        :aria-pressed="tab === 'memories'"
+        @click="showTab('memories')"
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="22"
-          height="22"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.6"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+        <span
+          class="promo__icon"
+          aria-hidden="true"
         >
-          <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z" />
-          <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z" />
-        </svg>
-      </span>
-      <span class="promo__text">
-        <span class="promo__title">Family memories</span>
-        <span class="promo__note">Preserve stories and photographs</span>
-      </span>
-    </button>
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z" />
+            <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z" />
+          </svg>
+        </span>
+        <span class="promo__text">
+          <span class="promo__title">Family memories</span>
+          <span class="promo__note">Preserve stories and photographs</span>
+        </span>
+      </button>
+
+      <!-- Life events has no feature behind it yet, so it is drawn as what
+           it is — a card that says so — rather than as a list of invented
+           birthdays. -->
+      <div class="promo promo--pending">
+        <span
+          class="promo__icon"
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect
+              x="3"
+              y="5"
+              width="18"
+              height="16"
+              rx="2"
+            />
+            <path d="M3 10h18M8 3v4M16 3v4" />
+          </svg>
+        </span>
+        <span class="promo__text">
+          <span class="promo__title">Life events</span>
+          <span class="promo__note">Birthdays, milestones, anniversaries</span>
+          <span class="promo__pending">Not in M1 yet</span>
+        </span>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -499,6 +645,7 @@ function personName(personId: string): string {
 .head__action {
   display: inline-flex;
   align-items: center;
+  gap: 0.45rem;
   min-height: var(--control-height);
   padding: 0 1.1rem;
   border-radius: var(--radius-control);
@@ -508,14 +655,15 @@ function personName(personId: string): string {
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
+  transition: background-color 0.15s ease;
 }
 
 .head__action:hover {
-  background: color-mix(in srgb, var(--primary) 88%, var(--text));
+  background: var(--primary-hover);
   text-decoration: none;
 }
 
-/* ---- three counts ---- */
+/* ---- three counts, kept quiet ---------------------------------------- */
 
 .stats {
   display: grid;
@@ -531,10 +679,13 @@ function personName(personId: string): string {
      bottom of each card keeps the three numbers on one line whichever of
      the two is showing. */
   justify-content: space-between;
-  padding: 0.6rem 0.85rem 0.7rem;
+  gap: 0.35rem;
+  padding: 0.65rem 0.9rem 0.7rem;
+  /* Linen on linen, so the cards read as a quiet strip rather than three
+     more panels competing with the tree. */
   border: var(--hairline) solid var(--border);
   border-radius: var(--radius-card);
-  background: var(--surface);
+  background: var(--canvas);
 }
 
 .stat__label {
@@ -544,12 +695,12 @@ function personName(personId: string): string {
 
 .stat__value {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
-/* ---- the panel and its two tabs ---- */
+/* ---- the workspace --------------------------------------------------- */
 
 .board {
   border: var(--hairline) solid var(--border);
@@ -558,22 +709,30 @@ function personName(personId: string): string {
   overflow: hidden;
 }
 
+.board__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.6rem;
+  border-bottom: var(--hairline) solid var(--border);
+  background: var(--surface);
+}
+
 .board__tabs {
   display: flex;
   gap: 0.35rem;
-  padding: 0.5rem 0.6rem 0;
-  background: var(--canvas);
-  border-bottom: var(--hairline) solid var(--border);
 }
 
 .board__tab {
   display: inline-flex;
   align-items: center;
+  gap: 0.45rem;
   min-height: var(--control-height);
-  padding: 0 1rem;
+  padding: 0 0.9rem;
   border: var(--hairline) solid transparent;
-  border-bottom: none;
-  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  border-radius: var(--radius-control);
   background: none;
   color: var(--text-muted);
   font: inherit;
@@ -586,123 +745,75 @@ function personName(personId: string): string {
   color: var(--primary);
 }
 
-/* The open tab takes the panel's own background and drops its bottom edge,
-   so the two read as one sheet — the way the reference draws it. */
+/* The open view: paper white, ringed so it reads as raised off the bar,
+   terracotta icon, ink label — the reference's selected state. */
 .board__tab--on {
-  background: var(--surface);
   border-color: var(--border);
-  color: var(--primary);
-  margin-bottom: -1px;
-}
-
-/* ---- the canvas ---- */
-
-.canvas {
-  display: grid;
-  justify-items: center;
-  gap: 0.15rem;
-  padding: 1.35rem 1rem 1.5rem;
-}
-
-.column {
-  display: grid;
-  justify-items: center;
-  gap: 0.6rem;
-  width: 100%;
-}
-
-.column__title {
-  margin: 0;
-  font-size: 0.82rem;
-  font-weight: 600;
-  font-variant: small-caps;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-}
-
-.column__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-.arrow {
-  color: var(--primary);
-  font-size: 1.15rem;
-  line-height: 1;
-  padding: 0.1rem 0 0.3rem;
-}
-
-/* ---- a person card: avatar, name, years ---- */
-
-/* Narrow enough that two cards still share a row at 390px, wide enough for
-   the longest name in the seed to wrap rather than shrink. */
-.card {
-  display: grid;
-  justify-items: center;
-  gap: 0.15rem;
-  width: 9rem;
-  padding: 0.85rem 0.7rem 0.8rem;
-  border: var(--hairline) solid var(--border);
-  border-radius: var(--radius-card);
   background: var(--surface);
-  font: inherit;
   color: var(--text);
-  text-align: center;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease;
 }
 
-.card:hover {
-  border-color: var(--primary);
+.board__tab--on:hover {
+  color: var(--text);
 }
 
-/* Selected: the terracotta wash and ring, exactly as the reference screen
-   draws it — a wash of colour, not a shadow. */
-.card--selected {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-}
-
-.card--selected .card__avatar {
-  background: var(--surface);
-}
-
-.card__avatar {
-  display: grid;
-  place-items: center;
-  width: 2.4rem;
-  height: 2.4rem;
-  margin-bottom: 0.25rem;
-  border-radius: 50%;
-  background: var(--primary-soft);
+.board__tab--on .board__icon {
   color: var(--primary);
+}
+
+.board__icon {
+  color: var(--text-muted);
+  flex: 0 0 auto;
+}
+
+.board__zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.board__zoombtn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.board__zoombtn:hover:not(:disabled) {
+  color: var(--primary);
+}
+
+.board__zoombtn:disabled {
+  opacity: 0.45;
+}
+
+.board__level {
+  min-width: 3rem;
+  text-align: center;
   font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.card__name {
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.card__nick,
-.card__dates {
-  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
   color: var(--text-muted);
 }
 
-.card__flag {
-  font-size: 0.72rem;
-  font-style: italic;
-  color: var(--danger);
+.board__body {
+  background: var(--surface);
+}
+
+/* The workspace already draws its own frame, so the state box inside it
+   must not draw a second one — but an error keeps its accent. */
+.board__body .async {
+  border: 0;
+  border-radius: 0;
+  padding: 1rem;
+}
+
+.board__body .async--error {
+  border-left: 3px solid var(--danger);
 }
 
 /* ---- the Memories tab: the person page's list, for the whole tree ---- */
@@ -711,8 +822,6 @@ function personName(personId: string): string {
   padding: 1.1rem 1.1rem 1.25rem;
 }
 
-/* The panel already carries a border, so the state box inside it must not
-   draw a second one. */
 .tmemories .async {
   border: 0;
   padding: 0.9rem 0 0;
@@ -768,15 +877,14 @@ function personName(personId: string): string {
   font-size: 0.92rem;
 }
 
-/* ---- the selected person's panel ---- */
+/* ---- the selected person's panel ------------------------------------- */
 
 .panel {
   margin-top: 1.5rem;
   padding: 1rem 1.1rem;
-  border: var(--hairline) solid var(--border);
-  border-left: 3px solid var(--primary);
-  border-radius: var(--radius-card);
+  border-top: var(--hairline) solid var(--border);
   background: var(--surface);
+  border-left: 3px solid var(--primary);
 }
 
 .panel h2 {
@@ -817,19 +925,25 @@ function personName(personId: string): string {
 }
 
 .panel__open:hover {
-  background: color-mix(in srgb, var(--primary) 88%, var(--text));
+  background: var(--primary-hover);
   text-decoration: none;
 }
 
-/* ---- the link card at the bottom ---- */
+/* ---- the two supporting cards ---------------------------------------- */
+
+.promos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
 
 .promo {
   display: flex;
-  align-items: center;
-  gap: 0.85rem;
+  align-items: flex-start;
+  gap: 0.75rem;
   width: 100%;
-  margin-top: 1rem;
-  padding: 0.9rem 1rem;
+  padding: 1rem;
   border: var(--hairline) solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface);
@@ -852,19 +966,33 @@ function personName(personId: string): string {
   background: var(--primary-soft);
 }
 
+/* No feature behind this one, so it does not pretend to be a button. */
+.promo--pending {
+  cursor: default;
+}
+
+.promo--pending:hover {
+  border-color: var(--border);
+}
+
 .promo__icon {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 2.4rem;
-  height: 2.4rem;
-  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-control);
   background: var(--primary-soft);
   color: var(--primary);
 }
 
 .promo--on .promo__icon {
   background: var(--surface);
+}
+
+.promo--pending .promo__icon {
+  background: color-mix(in srgb, var(--success) 16%, var(--surface));
+  color: var(--success);
 }
 
 .promo__text {
@@ -878,6 +1006,13 @@ function personName(personId: string): string {
 
 .promo__note {
   font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.promo__pending {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-style: italic;
   color: var(--text-muted);
 }
 </style>

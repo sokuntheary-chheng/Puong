@@ -150,28 +150,47 @@ function page(name, H, body, title) {
 /* 2 — Home: my trees                                                  */
 /* ------------------------------------------------------------------ */
 {
-  const H = 480;
+  const H = 500;
   const cards = [
-    ['Mango family', 'Four generations · 23 people · you are the owner', 130],
-    ['Mangosteen family', 'Seeded empty on purpose, to show what an empty tree looks like (FR-8.4)', 216],
+    ['Mango family', 'Four generations · 23 people · you are the owner', 248],
+    ['Mangosteen family', 'Seeded empty on purpose, to show what an empty tree looks like (FR-8.4)', 334],
+  ];
+  const stats = [
+    ['Trees', '2', 24],
+    ['People', '23', 332],
+    ['Memories', '5', 640],
   ];
   const body = [
     shell({ url: 'puong.dev/', active: 'My trees', H }),
     T(24, 112, 'My trees', { size: 22, weight: 700 }),
+    T(24, 134, 'Every tree you belong to, in one place.', { size: 12.5, fill: MUTED }),
+    /* The reference's primary slot. M1 has no create-tree flow behind it,
+       so the wireframe draws it doing exactly what it does — nothing —
+       and says so, rather than drawing a button that looks ready to work. */
+    BOX(778, 96, 158, 36, { fill: BARE, stroke: RULE, rx: 8 }),
+    T(857, 119, 'Add a family', { size: 13, weight: 600, fill: MUTED, anchor: 'middle' }),
+    T(936, 150, 'Not in M1 yet', { size: 10.5, fill: MUTED, italic: true, anchor: 'end' }),
+    ...stats.flatMap(([label, value, x]) => [
+      BOX(x, 164, 296, 64, { fill: BARE }),
+      T(x + 16, 188, label, { size: 11.5, fill: MUTED }),
+      T(x + 16, 216, value, { size: 20, weight: 700 }),
+    ]),
     ...cards.flatMap(([name, note, y]) => [
       BOX(24, y, 620, 74),
       T(40, y + 28, name, { size: 15, weight: 700 }),
       T(40, y + 52, note, { size: 12, fill: MUTED }),
       T(620, y + 40, '→', { size: 15, fill: ACCENT, anchor: 'end' }),
     ]),
-    T(24, 330, 'The three states this list can be in — loading, empty, error — are on sheet 7.', {
+    T(24, 444, 'The three states this list can be in — loading, empty, error — are on sheet 7.', {
       size: 12,
       fill: MUTED,
       italic: true,
     }),
     DOT(104, 15, 1),
-    DOT(660, 152, 2),
-    DOT(624, 326, 3),
+    DOT(857, 114, 2),
+    DOT(352, 172, 3),
+    DOT(660, 264, 4),
+    DOT(624, 440, 5),
   ].join('\n');
   page('home', H, body, 'Wireframe — home, my trees (/)');
 }
@@ -180,11 +199,16 @@ function page(name, H, body, title) {
 /* 3 — Tree view (detail page with a route parameter)                  */
 /* ------------------------------------------------------------------ */
 {
-  const H = 740;
-  const cols = [
+  const H = 900;
+  /* One band per generation, oldest at the top — the orientation the
+     tree-first screen draws in, and the one design.md §1.5 notes. */
+  const CARD_W = 150;
+  const CARD_H = 64;
+  const bands = [
     {
-      x: 44,
-      title: 'GENERATION 1',
+      label: 'GENERATION 1',
+      labelY: 340,
+      y: 350,
       cards: [
         ['Mr. Mango', '1935 – 2010', false],
         ['Mrs. Mangosteen', '1938 –', false],
@@ -193,84 +217,148 @@ function page(name, H, body, title) {
       more: null,
     },
     {
-      x: 272,
-      title: 'GENERATION 2',
+      label: 'GENERATION 2',
+      labelY: 446,
+      y: 456,
       cards: [
         ['Jack Fruitson', '1960 –', false],
         ['Cherry Berry', '1962 –', false],
         ['Sir Watermelon', '1963 –', false],
       ],
-      more: '… 3 more',
+      more: '… 4 more',
       selected: 1,
     },
     {
-      x: 500,
-      title: 'GENERATION 3',
-      cards: [
-        ['Coco Nutley', '1961 –', false],
-        ['Peachy Chan', '1967 – 2019', false],
-        ['Dr. Pine Apple', '1969 –', false],
-      ],
-      more: '… 6 more',
-    },
-    {
-      x: 728,
-      title: 'GENERATION 4',
+      label: 'GENERATION 3',
+      labelY: 552,
+      y: 562,
       cards: [
         ['Chheng Sokuntheary', '1985 –', false],
         ['Papaya Parker', '1988 –', false],
         ['Grape Gatsby', '1987 –', false],
       ],
-      more: '… 2 more',
+      more: '… 5 more',
     },
+  ];
+  const bandXs = [231, 405, 579];
+
+  /** A parent line: down from the parents' midpoint, across, down again. */
+  const elbow = (x1, y1, x2, y2) =>
+    `<path d="M${x1} ${y1}V${(y1 + y2) / 2}H${x2}V${y2}" fill="none" stroke="${RULE}" stroke-width="1.5"/>`;
+  /** A couple's own link: a short bridge across the gap between cards. */
+  const bridge = (x1, x2, y) =>
+    `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${ACCENT}" stroke-opacity="0.55" stroke-width="1.5"/>`;
+
+  const stats = [
+    ['Family members', '23', 24],
+    ['Generations', '4', 332],
+    ['Memories', '5', 640],
   ];
 
   const body = [
     shell({ url: 'puong.dev/trees/t1?person=p04', active: 'My trees', H }),
     crumb('My trees / Mango family'),
     T(24, 136, 'Mango family', { size: 22, weight: 700 }),
-    T(936, 134, 'You are owner here', { size: 12, fill: MUTED, anchor: 'end' }),
-    BOX(24, 156, 912, 296, { fill: SURF }),
-    ...cols.flatMap((col) => {
-      const out = [T(col.x, 184, col.title, { size: 10.5, fill: MUTED, weight: 600 })];
-      col.cards.forEach(([name, dates, flagged], i) => {
-        const y = 196 + i * 58;
-        const h = flagged ? 64 : 50;
-        const isSel = col.selected === i;
+    T(24, 158, 'Four generations of the Mango family, from Mr. Mango and Mrs. Mangosteen in 1935 to the children born after 2010.', { size: 12, fill: MUTED }),
+    T(24, 178, 'You are owner here', { size: 11.5, fill: MUTED }),
+    /* The screen's one primary action: the working, role-gated write M1 has. */
+    BOX(790, 112, 146, 36, { fill: ACCENT, stroke: ACCENT, rx: 8 }),
+    T(863, 135, 'Add a memory', { size: 13, weight: 600, fill: SURF, anchor: 'middle' }),
+
+    ...stats.flatMap(([label, value, x]) => [
+      BOX(x, 196, 296, 64, { fill: BARE }),
+      T(x + 16, 220, label, { size: 11.5, fill: MUTED }),
+      T(x + 16, 248, value, { size: 20, weight: 700 }),
+    ]),
+
+    /* The workspace: a paper toolbar over a paper canvas, one border. */
+    BOX(24, 272, 912, 468, { fill: SURF }),
+    BOX(36, 282, 134, 32, { fill: SURF, stroke: RULE, rx: 8 }),
+    `<rect x="48" y="291" width="12" height="12" rx="3" fill="none" stroke="${ACCENT}" stroke-width="1.6"/>`,
+    T(68, 303, 'Family tree', { size: 12.5, weight: 600 }),
+    T(192, 303, 'Memories', { size: 12.5, fill: MUTED }),
+    /* These move the graph — they are not decoration. */
+    BOX(744, 286, 26, 26, { fill: SURF, rx: 8 }),
+    T(757, 304, '−', { size: 14, anchor: 'middle' }),
+    T(790, 304, '80%', { size: 12, fill: MUTED, anchor: 'middle' }),
+    BOX(816, 286, 26, 26, { fill: SURF, rx: 8 }),
+    T(829, 304, '+', { size: 14, anchor: 'middle' }),
+    BOX(862, 286, 26, 26, { fill: SURF, rx: 8 }),
+    `<rect x="869" y="293" width="12" height="12" fill="none" stroke="${INK}" stroke-width="1.4"/>`,
+    LINE(24, 318, 936, 318),
+
+    /* Two of the couple's children, and a person nobody has linked yet. */
+    bridge(381, 405, 382),
+    elbow(393, 414, 306, 456),
+    elbow(393, 414, 480, 456),
+    bridge(381, 405, 488),
+    elbow(393, 520, 306, 562),
+    elbow(393, 520, 480, 562),
+
+    ...bands.flatMap((band) => {
+      const out = [
+        T(480, band.labelY, band.label, {
+          size: 10.5,
+          fill: MUTED,
+          weight: 600,
+          anchor: 'middle',
+        }),
+      ];
+      band.cards.forEach(([name, dates, flagged], i) => {
+        const x = bandXs[i];
+        const isSel = band.selected === i;
         out.push(
-          BOX(col.x, y, 200, h, {
-            fill: SURF,
+          BOX(x, band.y, CARD_W, CARD_H, {
+            fill: isSel ? BARE : SURF,
             stroke: isSel ? ACCENT : RULE,
             sw: isSel ? 2 : 1,
           }),
-          T(col.x + 12, y + 19, name, { size: 12, weight: 600 }),
-          T(col.x + 12, y + 36, dates, { size: 10.5, fill: MUTED }),
+          T(x + 16, band.y + 26, name, { size: 12, weight: 600 }),
+          T(x + 16, band.y + 44, dates, { size: 10.5, fill: MUTED }),
         );
         if (flagged) {
-          out.push(T(col.x + 12, y + 54, 'not linked yet', { size: 10, fill: DANGER, italic: true }));
+          out.push(
+            T(x + 16, band.y + 58, 'not linked yet', { size: 10, fill: DANGER, italic: true }),
+          );
         }
       });
-      if (col.more) out.push(T(col.x + 12, 396, col.more, { size: 11, fill: MUTED }));
+      if (band.more) out.push(T(745, band.y + 38, band.more, { size: 11, fill: MUTED }));
       return out;
     }),
-    BOX(24, 474, 912, 196),
-    `<rect x="24" y="474" width="4" height="196" fill="${ACCENT}"/>`,
-    T(44, 506, 'Cherry Berry', { size: 15, weight: 700 }),
-    T(44, 528, 'Cherry · born 1962 in Cần Thơ', { size: 12, fill: MUTED }),
-    T(44, 560, 'SPOUSE', { size: 10.5, fill: MUTED, weight: 600 }),
-    T(44, 580, 'Jack Fruitson', { size: 12.5, fill: ACCENT }),
-    T(260, 560, 'CHILDREN', { size: 10.5, fill: MUTED, weight: 600 }),
-    T(260, 580, 'Chheng Sokuntheary, Papaya Parker', { size: 12.5, fill: ACCENT }),
-    T(44, 616, 'PARENTS', { size: 10.5, fill: MUTED, weight: 600 }),
-    T(44, 636, 'not recorded in this tree', { size: 12.5, fill: MUTED, italic: true }),
-    T(936, 646, 'Open Cherry Berry’s page →', { size: 12.5, weight: 600, fill: ACCENT, anchor: 'end' }),
+
+    /* The selected person's panel — inside the workspace, below the graph. */
+    `<rect x="24" y="640" width="4" height="100" fill="${ACCENT}"/>`,
+    T(44, 668, 'Cherry Berry', { size: 15, weight: 700 }),
+    T(44, 692, 'SPOUSE', { size: 10.5, fill: MUTED, weight: 600 }),
+    T(44, 712, 'Jack Fruitson', { size: 12.5, fill: ACCENT }),
+    T(260, 692, 'CHILDREN', { size: 10.5, fill: MUTED, weight: 600 }),
+    T(260, 712, 'Chheng Sokuntheary, Papaya Parker', { size: 12.5, fill: ACCENT }),
+    T(560, 692, 'PARENTS', { size: 10.5, fill: MUTED, weight: 600 }),
+    T(560, 712, 'not recorded in this tree', { size: 12.5, fill: MUTED, italic: true }),
+    T(936, 732, 'Open Cherry Berry’s page →', { size: 12.5, weight: 600, fill: ACCENT, anchor: 'end' }),
+
+    /* The two supporting cards: one that works, one that says it does not. */
+    BOX(24, 752, 450, 84),
+    `<rect x="40" y="770" width="32" height="32" rx="8" fill="${BARE}"/>`,
+    T(84, 786, 'Family memories', { size: 14, weight: 600 }),
+    T(84, 808, 'Preserve stories and photographs', { size: 11.5, fill: MUTED }),
+    BOX(486, 752, 450, 84),
+    `<rect x="502" y="770" width="32" height="32" rx="8" fill="${BARE}"/>`,
+    T(546, 786, 'Life events', { size: 14, weight: 600 }),
+    T(546, 808, 'Birthdays, milestones, anniversaries', { size: 11.5, fill: MUTED }),
+    T(546, 826, 'Not in M1 yet', { size: 10.5, fill: MUTED, italic: true }),
+
     DOT(204, 15, 1),
     DOT(300, 15, 2),
-    DOT(152, 180, 3),
-    DOT(482, 274, 4),
-    DOT(252, 372, 5),
-    DOT(798, 130, 6),
-    DOT(742, 642, 7),
+    DOT(863, 114, 3),
+    DOT(352, 204, 4),
+    DOT(170, 174, 5),
+    DOT(726, 299, 6),
+    DOT(745, 356, 7),
+    DOT(440, 435, 8),
+    DOT(565, 470, 9),
+    DOT(900, 662, 10),
+    DOT(440, 772, 11),
   ].join('\n');
   page('tree-view', H, body, 'Wireframe — family tree canvas (/trees/:treeId)');
 }

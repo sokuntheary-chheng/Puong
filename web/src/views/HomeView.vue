@@ -11,11 +11,12 @@ import { useTreesStore } from '../stores/trees';
  * first, the totals second, so a failed list never leaves the counts
  * totalling somebody else's trees.
  *
- * There is no primary button on this screen. The reference's header has
- * one, but M1 has no create-tree route to put behind it and a button that
- * goes nowhere is worse than no button; the counts row below is drawn from
- * the same three states every other screen uses, so a total that is not
- * known yet shows a dash rather than a 0 that looks like an answer.
+ * The header carries a primary button, as the reference does, but M1 has
+ * no create-tree flow behind it — mockApi can list and read trees, not
+ * make one — so it is drawn disabled and says why, rather than sitting
+ * there looking ready to work. The counts row below is drawn from the same
+ * three states every other screen uses, so a total that is not known yet
+ * shows a dash rather than a 0 that looks like an answer.
  */
 const store = useTreesStore();
 
@@ -46,6 +47,44 @@ function initial(name: string): string {
         <p class="head__tagline">
           Every tree you belong to, in one place.
         </p>
+      </div>
+
+      <!-- The reference puts a primary action here. M1 has no create-tree
+           flow behind it (mockApi can list and read trees, not make one),
+           so the button is drawn doing exactly what it does — nothing —
+           and says so, rather than sitting there looking ready to work. -->
+      <div class="head__actions">
+        <button
+          type="button"
+          class="head__action"
+          disabled
+          aria-describedby="add-family-note"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle
+              cx="9"
+              cy="7"
+              r="4"
+            />
+            <path d="M19 8v6M22 11h-6" />
+          </svg>
+          Add a family
+        </button>
+        <span
+          id="add-family-note"
+          class="head__note"
+        >Not in M1 yet</span>
       </div>
     </header>
 
@@ -158,6 +197,33 @@ function initial(name: string): string {
 
 .head__tagline {
   font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.head__actions {
+  display: grid;
+  justify-items: end;
+  gap: 0.3rem;
+}
+
+.head__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: var(--control-height);
+  padding: 0 1.1rem;
+  border: var(--hairline) solid var(--primary);
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--surface);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
+.head__note {
+  font-size: 0.75rem;
+  font-style: italic;
   color: var(--text-muted);
 }
 

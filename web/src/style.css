@@ -2,10 +2,10 @@
  * Puong — the one place the visual language is defined.
  *
  * Six colours, defined once and never repeated as a literal anywhere else
- * in the app: canvas, surface, primary, text, border, success. Everything
- * derived from them (muted text, the error colour, the soft tint behind a
- * selected card) is derived here too, from those six, so a colour can be
- * changed in exactly one line.
+ * in the app: canvas, surface, primary, text, border, success — with the
+ * rest of the reference palette (hover, muted ink, sand, connector line)
+ * beside them, for the same reason. Everything derived from them is
+ * derived here too, so a colour can be changed in exactly one line.
  *
  * Shape: cards 12px radius, controls 40px tall with an 8px radius, thin
  * warm borders instead of shadows. Type is the system stack — no external
@@ -18,14 +18,25 @@
   --surface: #fffdf9;
   --primary: #b9634b;
   --text: #46352f;
-  --border: #e6d6c4;
+  --border: #e6dcce;
   --success: #64745a;
 
-  /* ---- derived from the six above --------------------------------- */
-  /* Secondary text: the ink, thinned towards the canvas. */
-  --text-muted: color-mix(in srgb, var(--text) 64%, var(--canvas));
+  /* The rest of the reference palette: named here so no component ever
+     has to spell a hex value out. */
+  /* Hover for anything filled with --primary. */
+  --primary-hover: #a4513b;
+  /* Supporting text: dates, labels, subtitles — the reference's muted
+     brown rather than a wash of the ink. */
+  --text-muted: #83746a;
+  /* Avatar discs and secondary surfaces — the old border colour, kept for
+     the jobs the new, cooler border is not meant for. */
+  --sand: #e6d6c4;
+  /* Relationship lines on the tree canvas. */
+  --connector: #d9c5b0;
+
+  /* ---- derived from the above ------------------------------------- */
   /* The wash behind a selected card. */
-  --primary-soft: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  --primary-soft: #f7e7de;
   /* Errors sit between the primary and the ink — the palette has no red
      of its own, and a rust that dark reads as an error without shouting. */
   --danger: color-mix(in srgb, var(--primary) 62%, var(--text));
@@ -78,8 +89,9 @@ h3 {
   line-height: 1.25;
 }
 
+/* Page titles: 24px on a phone, 32px on a desktop, one step in between. */
 h1 {
-  font-size: 1.75rem;
+  font-size: clamp(1.5rem, 1.35rem + 0.7vw, 2rem);
   letter-spacing: -0.01em;
   margin: 0 0 0.35rem;
 }
@@ -149,7 +161,7 @@ button[type='submit'] {
 }
 
 button[type='submit']:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--primary) 88%, var(--text));
+  background: var(--primary-hover);
 }
 
 input,

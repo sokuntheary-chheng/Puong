@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import { mockApi } from './services/mockApi';
 import { useSessionStore } from './stores/session';
 
@@ -13,6 +14,27 @@ import { useSessionStore } from './stores/session';
  * at M3 when there is a real session to sign in with.
  */
 const session = useSessionStore();
+const route = useRoute();
+
+/**
+ * The tree the screen below is inside, if any.
+ *
+ * The header's search leads to the tree's own search — there is no global
+ * search to offer, so outside a tree the icon is simply not drawn rather
+ * than drawn as something that does nothing.
+ */
+const treeId = computed(() => {
+  const id = route.params.treeId;
+  return typeof id === 'string' ? id : '';
+});
+
+/** The two letters the account badge wears. */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter((part) => part.length > 0);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
+  return `${first}${last}`.toUpperCase();
+}
 
 onMounted(() => {
   void session.fetchUsers();
@@ -49,7 +71,41 @@ function resetSeed(): void {
         <span
           class="shell__mark"
           aria-hidden="true"
-        >P</span>
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect
+              x="9"
+              y="2.5"
+              width="6"
+              height="5"
+              rx="1.5"
+            />
+            <rect
+              x="2.5"
+              y="16.5"
+              width="6"
+              height="5"
+              rx="1.5"
+            />
+            <rect
+              x="15.5"
+              y="16.5"
+              width="6"
+              height="5"
+              rx="1.5"
+            />
+            <path d="M12 7.5V13M5.5 13h13M5.5 13v3.5M18.5 13v3.5" />
+          </svg>
+        </span>
         <span class="shell__names">
           <span class="shell__name">Puong</span>
           <span class="shell__tag">Your family’s story, connected.</span>
@@ -65,7 +121,37 @@ function resetSeed(): void {
         <RouterLink to="/login">
           Log in
         </RouterLink>
-        <span class="shell__who">{{ session.currentDisplayName }}</span>
+        <RouterLink
+          v-if="treeId !== ''"
+          class="shell__icon"
+          :to="{ name: 'search', params: { treeId } }"
+          aria-label="Search this tree"
+          title="Search this tree"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle
+              cx="11"
+              cy="11"
+              r="7"
+            />
+            <path d="m16.5 16.5 4 4" />
+          </svg>
+        </RouterLink>
+        <span
+          class="shell__who"
+          role="img"
+          :aria-label="`Signed in as ${session.currentDisplayName}`"
+          :title="session.currentDisplayName"
+        >{{ initialsOf(session.currentDisplayName) }}</span>
       </nav>
     </header>
 
@@ -150,7 +236,10 @@ function resetSeed(): void {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.7rem 1.5rem;
+  /* Lands the bar at ~66px with the 34px mark in it: the reference's
+     64–72px, and enough room for the name and its tagline to sit
+     comfortably rather than being squeezed. */
+  padding: 0.9rem 1.5rem;
   border-bottom: var(--hairline) solid var(--border);
   background: var(--surface);
 }
@@ -174,8 +263,6 @@ function resetSeed(): void {
   border-radius: var(--radius-control);
   background: var(--primary);
   color: var(--surface);
-  font-size: 0.95rem;
-  font-weight: 700;
 }
 
 .shell__names {
@@ -202,6 +289,8 @@ function resetSeed(): void {
 
 .shell__nav a {
   color: var(--text);
+  /* "My trees" is one label, not two words that may fall apart. */
+  white-space: nowrap;
 }
 
 .shell__nav a:hover {
@@ -214,9 +303,38 @@ function resetSeed(): void {
   text-decoration: none;
 }
 
+/* The header's search — only drawn inside a tree, where it leads to that
+   tree's real search route rather than to nowhere. */
+.shell__icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-control);
+  color: var(--text);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.shell__icon:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+  text-decoration: none;
+}
+
+/* The account badge: a disc with initials on the reference's sand, not a
+   control — there is nothing to open until M3 brings a real session. */
 .shell__who {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--sand);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .shell__main {
@@ -287,5 +405,32 @@ function resetSeed(): void {
 
 .choice small {
   color: var(--text-muted);
+}
+
+/* ---- narrow screens: one compact line of brand, one line of links ---- */
+@media (max-width: 640px) {
+  .shell__bar {
+    gap: 0.6rem;
+    padding: 0.7rem 1rem;
+  }
+
+  /* The tagline is a desktop flourish; on a phone the navigation needs
+     the room more than it does. */
+  .shell__tag {
+    display: none;
+  }
+
+  .shell__nav {
+    gap: 0.7rem;
+    font-size: 0.85rem;
+  }
+
+  .shell__main {
+    padding: 1.1rem 1rem 2.5rem;
+  }
+
+  .shell__foot {
+    padding: 0.5rem 1rem;
+  }
 }
 </style>
