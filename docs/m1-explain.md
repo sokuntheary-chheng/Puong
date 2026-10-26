@@ -20,7 +20,7 @@ shareable as a URL. Confusing the route with the store is the most common mistak
 | State | Where | Why |
 |---|---|---|
 | Current user and identity | **store** (`useSessionStore`) | Every screen needs it and it survives navigation. It must not be settable from a URL, and M3 replaces `currentUserId` with a real session restored from the token on reload. |
-| The list of my trees | **store** (`useTreesStore`) | Shown on the home page; it also has to be refetched when the identity changes, because a list of one member's trees is wrong for the next one. |
+| The list of my trees, and the people and memories in them | **store** (`useTreesStore`) | Shown on the home page; it also has to be refetched when the identity changes, because a list of one member's trees is wrong for the next one. The counts the home screen draws across the top live beside the list for exactly that reason: they are totals *of* it, so they follow its lifecycle — refetched for the new member, retried by the same button, and never left totalling the previous member's trees. (M2 replaces the per-tree requests with one aggregate endpoint.) |
 | The active tree, its people, its relations and **my role in it** | **store** (`useTreeStore`, the `openTree` store) | The tree view, person page and search all need it, and every *can I do this* check reads the role. The four requests are issued together and folded into one `loadState`, so a view waits on one thing rather than four. |
 | The people of the active tree, and the generations derived from them | **store** (`useTreeStore`) | The same 23 people appear on the tree view, the person page and the search results. The generation placement is derived once here rather than recomputed per screen, so the three views can never disagree about where somebody sits. |
 | The memories of the person being viewed — and the memories of the open tree | **store** (`useMemoriesStore`) | The person page lists them and the form appends to them — one copy, or writing a memory would not show up until a reload. The tree view reads the tree-wide list for its memory count and its Memories tab; both are fetched through the one `memories.list` endpoint. It refetches on identity change because FR-6.6's answer depends on who is asking. |
@@ -77,7 +77,8 @@ which is how the file list reads:
 
 ```text
 useSessionStore  ('session')   → currentUserId, currentUser, fetchUsers(), switchTo()
-useTreesStore    ('trees')     → trees (AsyncState), fetch(); watches the session
+useTreesStore    ('trees')     → trees (AsyncState), counts (people, memories),
+                                 fetch(); watches the session
 useTreeStore     ('openTree')  → tree, people, relations, role, loadState,
                                  generations, canWrite, familyOf(), open(treeId)
 useMemoriesStore ('memories')  → list, created, fetchFor(), create()
