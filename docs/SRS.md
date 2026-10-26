@@ -5,7 +5,11 @@
 | Field | Value |
 |---|---|
 | **Project / Document** | Puong — shared family archive · Software Requirements Specification |
-| **Version / Date / Author** | 1.0 · 21 October 2026 · sokuntheary-chheng |
+| **Version / Date** | 1.0 · 21 October 2026 |
+| **Author** | Chheng Sokuntheary |
+| **Student ID** | p20240044 |
+| **Course** | Internet Programming |
+| **Lecturer** | Chun Thavorac |
 | **Standard** | ISO/IEC/IEEE 29148:2018 (successor to IEEE 830-1998) |
 
 ## Table of contents
@@ -24,7 +28,7 @@ This document specifies the functional and non-functional requirements of **Puon
 
 A user creates one or more family trees and shares them with relatives; the members of a tree collectively build the record.
 
-**In scope:** authentication and role-based access control within a tree; tree management, membership, invitations and ownership transfer; people, relations and a generation-organised tree view; memories and photographs; search, filtering and pagination; a daily scheduled job; Docker Compose deployment with continuous integration.
+**In scope:** authentication and role-based access control within a tree; tree management, membership, invitations and ownership transfer; people, relations and a generation-organised tree view; memories and photographs; search, filtering and pagination; Docker Compose deployment with continuous integration.
 
 **Out of scope:**
 
@@ -92,11 +96,11 @@ Puong is self-contained and depends on no third-party service at run time. The A
 
 ### 2.2 Product functions
 
-Seven functional groups, each corresponding to one requirement group in §3.2: **authentication and account**; **trees**; **membership and invitations** (inviting, accepting, declining, expiry, removal, ownership transfer); **people** (each person's record and a "still needs details" status); **relations** (linking two people with a type, under the rules that keep the lineage sound); **memories and photographs** (with per-memory privacy); **discovery** (search, filter, pagination, and the generation-column tree view).
+Seven functional groups, which the ten requirement groups in §3.2 implement: **authentication and account**; **trees**; **membership and invitations** (inviting, accepting, declining, expiry, removal, ownership transfer); **people** (each person's record, and whether that record is complete); **relations** (linking two people with a type, under the rules that keep the lineage sound); **memories and photographs** (with per-memory privacy); **discovery** (search, filter, pagination, and the generation-column tree view).
 
 ### 2.3 User stories
 
-The ten stories below define the scope of the release. §4 traces each requirement group back to the stories it serves.
+The ten stories below define the scope of the release: nine are in the MVP and story 8 is nice to have. §4 traces each requirement group back to the stories it serves.
 
 | ID | Role | User story |
 |---|---|---|
@@ -107,7 +111,7 @@ The ten stories below define the scope of the release. §4 traces each requireme
 | US‑5 | Contributor | As a Contributor, I want to link a new person to relatives already in the tree, so that I do not enter the same family twice. |
 | US‑6 | Contributor | As a Contributor, I want to attach a memory and a photograph to a person, so that the family's stories and pictures are kept together. |
 | US‑7 | Contributor | As a Contributor, I want to edit and delete only my own contributions, so that I can fix my mistakes without touching anyone else's. |
-| US‑8 | Owner | As an Owner, I want to see which profiles are still incomplete, so that the record gets finished over time. |
+| US‑8 | Owner | As an Owner, I want to see which profiles are still incomplete, so that the record gets finished over time. **Nice to have — outside the MVP.** |
 | US‑9 | Member | As any member, I want to search for a person and filter the list, so that I can find anyone quickly. |
 | US‑10 | Owner | As an Owner, I want to nominate a successor who can take over the tree, so that the archive outlives the person who started it. |
 
@@ -134,7 +138,7 @@ There is no administrator role distinct from the Owner, and no role that can rea
 - PostgreSQL 15 is available in the development environment and as a container image.
 - Browsers support ES2020, `localStorage` and the `File` API; photographs are uploaded as `multipart/form-data`.
 - Identity is established solely by the signed JWT issued by the API; no session store is shared between instances.
-- Clock-based behaviour is computed by a scheduled job in the API process, not by the browser.
+- Time-dependent behaviour — chiefly the expiry of an invitation — is evaluated by the API from the timestamps already stored, not by the browser.
 
 ---
 
@@ -194,11 +198,11 @@ There is no administrator role distinct from the Owner, and no role that can rea
 
 - **FR-4.1** The system shall allow a contributor to create a person within a tree they belong to, requiring only the full name and accepting optional birth date, death date, gender, nickname, biography and photograph.
 - **FR-4.2** The system shall reject a death date earlier than the birth date of the same person.
-- **FR-4.3** The system shall set a person's profile status to `PLACEHOLDER` when only the name is given, to `INCOMPLETE` when a name and a birth date are given, and to `COMPLETE` when the person also has a photograph or a biography.
+- **FR-4.3** The system shall derive a person's profile completeness from the person's own data instead of storing it: a profile counts as complete when the person has a full name, a birth date, and either a photograph or a biography. No status column shall exist on `Person`, so editing a person cannot leave a stale status behind.
 - **FR-4.4** The system shall allow a contributor to update a person they created, and shall allow an owner to update or delete any person in the tree.
 - **FR-4.5** The system shall return `403 Forbidden` when a contributor attempts to update a person created by another member.
-- **FR-4.6** The system shall allow an owner to archive a person without deleting that person's memories.
-- **FR-4.7** The system shall show an owner the number of people in the tree whose profile status is not `COMPLETE`.
+- **FR-4.6** The system shall allow an owner to delete a person, and shall remove that person's relations and memories with it, so that no orphaned record is left behind.
+- **FR-4.7** *(nice to have — serves story 8, outside the MVP)* The system shall show an owner the number of people in the tree whose derived profile completeness is incomplete.
 
 **FR-5 Relations**
 
@@ -206,19 +210,20 @@ There is no administrator role distinct from the Owner, and no role that can rea
 - **FR-5.2** The system shall interpret a `PARENT` relation as meaning that the source person is the parent of the target person.
 - **FR-5.3** The system shall reject a relation between a person and themselves with `400 Bad Request`.
 - **FR-5.4** The system shall reject a `PARENT` relation that would make a person an ancestor of themselves, and shall return `409 Conflict` with a message explaining the cycle.
-- **FR-5.5** The system shall allow a contributor to delete a relation.
-- **FR-5.6** The system shall compute the generation of each person by breadth-first traversal of `PARENT` relations, starting from the people who have no parents, placing every parent in an earlier generation than their child and every unrelated person in generation 0.
+- **FR-5.5** The system shall allow a contributor to delete a relation. A relation carries no author, so any member with write access may create or delete any relation in the tree; the unique triple (`fromId`, `toId`, `type`) prevents the same relation being created twice.
+- **FR-5.6** The system shall place a person who has no `PARENT` relation in generation 0, and any other person one generation below the **highest** generation among their parents, so that every parent is in an earlier generation than their child. A person who has no `PARENT` relation shall then adopt the highest generation among the people they are connected to by `SPOUSE`, `SIBLING` or `FRIEND`, repeating until no generation changes; a person with no `PARENT` relation and no connection to a placed person shall remain in generation 0.
 - **FR-5.7** The system shall include in a person's detail response their parents, children, spouses and other relations.
 
 **FR-6 Memories and photographs**
 
 - **FR-6.1** The system shall allow a contributor to attach a memory to a person in a tree they belong to, requiring a title and a body and accepting an optional occurred date and an optional photograph.
-- **FR-6.2** The system shall accept a photograph only in JPEG, PNG or WebP format and only up to 5 MB, shall reject any other type or size with a clear message, and shall store the file on local disk under a directory mounted as a Docker volume.
+- **FR-6.2** The system shall accept a photograph — whether attached to a person or to a memory — only in JPEG, PNG or WebP format and only up to 5 MB, shall reject any other type or size with a clear message, and shall store the file on local disk under a directory mounted as a Docker volume.
 - **FR-6.3** The system shall serve stored photographs over HTTP from a dedicated route.
 - **FR-6.4** The system shall allow a contributor to edit and to delete their own memories.
 - **FR-6.5** The system shall return `403 Forbidden` when a contributor attempts to edit or delete a memory authored by another member.
 - **FR-6.6** The system shall show a memory with visibility `PRIVATE` only to its author, including to an owner, and shall show a memory with visibility `TREE` to every active member of the tree.
 - **FR-6.7** The system shall list the memories of a person in reverse chronological order of their occurred date, and shall not allow the recorded author of a memory to be changed afterwards.
+- **FR-6.8** The system shall allow an owner to delete a memory authored by another member only when that memory's visibility is `TREE`, and shall return `403 Forbidden` when anyone other than the author attempts to delete a memory marked `PRIVATE`. No member shall be allowed to edit a memory they did not author.
 
 **FR-7 Search, filter and pagination**
 
@@ -236,14 +241,15 @@ There is no administrator role distinct from the Owner, and no role that can rea
 
 **FR-9 Transfer of ownership**
 
-- **FR-9.1** The system shall allow an owner to nominate one active member as successor and shall present the pending nomination to that successor.
+- **FR-9.1** The system shall allow an owner to nominate one active member whose role is `CONTRIBUTOR` or `OWNER` as successor, and shall present the pending nomination to that successor.
 - **FR-9.2** The system shall allow the successor to accept or decline the nomination; on acceptance ownership shall move to the successor and the previous owner shall be demoted to `CONTRIBUTOR`.
 - **FR-9.3** The system shall record each transfer with its date and the identity of the previous owner.
 
-**FR-10 Scheduled work**
+**FR-10 Scheduled work** *(nice to have — outside the MVP)*
+
+The MVP has no background job: invitation expiry (FR-3.4) is evaluated when an invitation is read. The requirement below would only write that state to the database.
 
 - **FR-10.1** The system shall run a daily job inside the API process that sets any invitation older than 7 days to the status `REVOKED`.
-- **FR-10.2** The system shall run a daily job that creates a reminder for each member of a tree when a person in that tree has a birthday within the next 7 days.
 
 ### 3.3 Internal requirements
 
@@ -260,7 +266,7 @@ There is no administrator role distinct from the Owner, and no role that can rea
 | `User` | id, email (unique), passwordHash, displayName | owns `Tree`s; holds `Membership`s; authors `Memory`s |
 | `Tree` | id, name, description, coverPhotoUrl, ownerId, successorId | one owner `User`; many `Membership`s, `Person`s, `Relation`s, `Memory`s |
 | `Membership` | id, treeId, userId, role, status, invitedAt, acceptedAt | joins `User` and `Tree`; unique per (tree, user) |
-| `Person` | id, treeId, fullName, nickname, gender, birthDate, deathDate, isLiving, photoUrl, bio, profileStatus, createdById | one `Tree`; one creator `User`; many `Relation`s; many `Memory`s |
+| `Person` | id, treeId, fullName, nickname, gender, birthDate, deathDate, isLiving, photoUrl, bio, createdById | one `Tree`; one creator `User`; many `Relation`s; many `Memory`s |
 | `Relation` | id, treeId, fromId, toId, type | connects two `Person`s; unique per (from, to, type) |
 | `Memory` | id, treeId, personId, authorId, title, body, happenedAt, photoUrl, visibility | one `Person`; one author `User`; one `Tree` |
 
@@ -293,7 +299,7 @@ There is no administrator role distinct from the Owner, and no role that can rea
 
 **Reliability and maintainability**
 
-- **NFR-3.1** The core domain rules — ancestor cycle detection, generation computation, profile status, permission decisions and memory visibility — shall be implemented as unit-testable functions in the service layer.
+- **NFR-3.1** The core domain rules — ancestor cycle detection, generation computation, profile completeness, permission decisions and memory visibility — shall be implemented as unit-testable functions in the service layer.
 - **NFR-3.2** The API shall be covered by end-to-end tests for the main endpoints, including at least one test asserting `403 Forbidden` for each restricted action.
 - **NFR-3.3** The codebase shall pass ESLint with zero errors and shall compile with TypeScript strict mode.
 
@@ -317,13 +323,14 @@ Each row groups the requirements of one functional area and states the user stor
 | FR-1.1 – FR-1.6 | — | `AuthModule`, `auth.service`, `JwtStrategy` | `auth.service.spec`, `auth.e2e-spec` | planned |
 | FR-2.1 – FR-2.5 | US‑1 | `TreesModule`, `trees.controller` | `trees.service.spec`, `trees.e2e-spec` | planned |
 | FR-3.1 – FR-3.6 | US‑2, US‑10 | `MembershipsModule`, `TreeMembershipGuard` | `memberships.e2e-spec` | planned |
-| FR-4.1 – FR-4.7 | US‑4, US‑8 | `PersonsModule`, `persons.service` | `persons.service.spec`, `persons.e2e-spec` | planned |
+| FR-4.1 – FR-4.6 | US‑4 | `PersonsModule`, `persons.service` | `persons.service.spec`, `persons.e2e-spec` | planned |
+| FR-4.7 *(nice to have)* | US‑8 *(nice to have)* | `PersonsService.countIncomplete` | `persons.service.spec` | optional |
 | FR-5.1 – FR-5.7 | US‑5 | `RelationsModule`, `RelationService.assertNoAncestorCycle` | `relations.service.spec` | planned |
-| FR-6.1 – FR-6.7 | US‑6, US‑7 | `MemoriesModule`, `UploadInterceptor` | `memories.e2e-spec` | planned |
+| FR-6.1 – FR-6.8 | US‑6, US‑7 | `MemoriesModule`, `UploadInterceptor` | `memories.e2e-spec` | planned |
 | FR-7.1 – FR-7.4 | US‑9 | `PersonsService.findAll` query builder | `person-query.spec`, `persons.e2e-spec` | planned |
 | FR-8.1 – FR-8.4 | US‑3 | `TreeView.vue`, `useTreeLayout` composable | `tree-layout.spec` | planned |
 | FR-9.1 – FR-9.3 | US‑10 | `TreesService.transferOwnership` | `trees.service.spec` | planned |
-| FR-10.1 – FR-10.2 | US‑2 | `ScheduledTasksService`, `@Cron` | `scheduled-tasks.spec` | planned |
+| FR-10.1 *(nice to have)* | US‑2 | `ScheduledTasksService`, `@Cron` | `scheduled-tasks.spec` | optional |
 | IF-1.1 – IF-1.7 | — | Global `HttpExceptionFilter`, `ValidationPipe` | `error-format.spec` | planned |
 
 The status column is updated at each milestone and is the basis of the features-versus-requirements assessment in the final product grade.
@@ -338,16 +345,16 @@ The application ships with three seeded accounts, one per role, so that the acce
 
 | Role | Email | Password | Access |
 |---|---|---|---|
-| Owner | `owner@puong.dev` | `Passw0rd!` | Owner of the Nguyễn tree and the Trần tree |
-| Contributor | `contributor@puong.dev` | `Passw0rd!` | Contributor in the Nguyễn tree; not a member of the Trần tree |
-| Viewer | `viewer@puong.dev` | `Passw0rd!` | Viewer in the Nguyễn tree; invited but not accepted in the Trần tree |
+| Owner | `owner@puong.dev` | `Passw0rd!` | Owner of the Mango family tree and the Mangosteen family tree |
+| Contributor | `contributor@puong.dev` | `Passw0rd!` | Contributor in the Mango family tree; not a member of the Mangosteen family tree |
+| Viewer | `viewer@puong.dev` | `Passw0rd!` | Viewer in the Mango family tree; invited but not accepted in the Mangosteen family tree |
 
 The seed also creates a four-generation tree of about 22 people with shared and private memories and several deliberately incomplete profiles, so that the tree view, the filters and the "needs details" count are meaningful on a fresh start.
 
 ### 5.2 Glossary of domain rules
 
-1. **Generation** — the depth of a person in the lineage, computed by breadth-first traversal from those who have no parents.
+1. **Generation** — one below the highest generation among a person's parents. A person with no parents recorded starts at 0 and then adopts the highest generation of the people they are linked to, remaining 0 only when linked to nobody placed.
 2. **Ancestor cycle** — a proposed `PARENT` relation that would place a person above themselves in the lineage. Rejected with `409`.
-3. **Profile status** — `PLACEHOLDER` (name only), `INCOMPLETE` (name and birth date), `COMPLETE` (name, birth date, and a photograph or a biography).
+3. **Profile completeness** — derived from the person's data and never stored: a profile is complete when the person has a full name, a birth date, and either a photograph or a biography.
 4. **Visibility** — `PRIVATE`, shown to the author alone, or `TREE`, shown to every active member.
 5. **Successor** — the member nominated by an owner to take over the tree on acceptance.

@@ -34,18 +34,18 @@ Roles are scoped **per tree**, not per account: a `Membership` record carries th
    Accepted when: every person in the tree appears exactly once, in a column for their generation; parents appear above their children; clicking a person opens their page with their relations and memories; a tree with no people shows a clear empty state instead of a blank screen.
 
 4. **As a Contributor, I want to add a person to the tree with their name and dates, so that the record grows.**
-   Accepted when: only the full name is required; birth and death dates are optional but a death date before the birth date is rejected with a clear message; the new person immediately appears in the tree in the correct generation; a person added with only a name is marked as a profile that still needs details.
+   Accepted when: only the full name is required; birth and death dates are optional but a death date before the birth date is rejected with a clear message; the new person immediately appears in the tree in the correct generation.
 
 5. **As a Contributor, I want to link a new person to relatives who are already in the tree, so that I do not have to enter the same family twice.**
    Accepted when: a link can be created between two different people with a type of parent, spouse, friend or sibling; a link to oneself is rejected; a link that would make a person their own ancestor is rejected with a clear message and the tree is left unchanged; the same link cannot be created twice.
 
 6. **As a Contributor, I want to attach a memory and a photograph to a person, so that the family's stories and pictures are kept together.**
-   Accepted when: a title and a text are required; one optional photograph can be attached in JPEG, PNG or WebP format up to 5 MB, and other formats or larger files are rejected with a clear message; the memory appears on that person's page and in the tree's activity list; a memory marked private is visible only to its author.
+   Accepted when: a title and a text are required; one optional photograph can be attached in JPEG, PNG or WebP format up to 5 MB, and other formats or larger files are rejected with a clear message; the memory appears on that person's page; a memory marked private is visible only to its author.
 
 7. **As a Contributor, I want to edit and delete only my own contributions, so that I can fix my mistakes without touching anyone else's.**
    Accepted when: edit and delete controls appear only on contributions I created; the API rejects an attempt to change or remove someone else's contribution with `403 Forbidden`; my own contributions can always be corrected.
 
-8. **As an Owner, I want to see which profiles are still incomplete, so that the record gets finished over time.**
+8. **As an Owner, I want to see which profiles are still incomplete, so that the record gets finished over time.** *(nice to have — not in the MVP, see "What was cut from the MVP" below)*
    Accepted when: the owner's home page shows the number of people whose profile still needs details; clicking that number opens a filtered list of exactly those people; a profile stops being counted as soon as it has a name, a birth date and a photograph or a biography.
 
 9. **As any member, I want to search for a person and filter the list, so that I can find anyone quickly.**
@@ -58,29 +58,42 @@ Roles are scoped **per tree**, not per account: a `Membership` record carries th
 
 ## MVP scope
 
+**Must have: stories 1–7, 9 and 10. Nice to have: story 8.**
+
 ### Must have
 
-- Registration, login, logout, with passwords hashed (bcrypt)
-- Tree management: create, rename, list my trees, delete a tree
-- Invitations and the three roles (Owner, Contributor, Viewer) per tree
-- People: create, view, update, archive; photo, dates, biography, "needs details" status
+- Registration, login, logout; passwords hashed with bcrypt; sessions carried by a signed JWT
+- Trees: create, rename, list my trees, delete a tree
+- People: create, view, update, delete; full name, birth and death dates, gender, nickname, biography
 - Relations between people: parent, spouse, friend, sibling — with the check that prevents a person from becoming their own ancestor
-- Memories: create, view, edit, delete; optional photograph; private or shared with the tree
-- Tree view organised by generation
-- Permissions enforced on the server (role + ownership) and reflected in the UI
-- Search by name, filter by relation type / living status / generation, 10 per page
+- Memories: create, view, edit, delete; an occurred date; private or shared with the tree
+- Photographs: uploaded for people and for memories, JPEG / PNG / WebP up to 5 MB, stored on a Docker volume
+- Invitations and the three roles (Owner, Contributor, Viewer) per tree
+- Permissions enforced on the server (role and ownership) and reflected in the interface
+- Tree view organised by generation, with the ancestor and descendant path of a selected person highlighted
+- Search by name, filter by relation type / living status / generation, 10 results per page
 - Validation on the client and on the server, with a consistent error format
-- Unit tests for the core rules, end-to-end tests for the main endpoints
-- Docker Compose for the whole stack, plus a README with test accounts
+- Unit tests for the core rules and end-to-end tests for the main endpoints; Swagger documentation
+- Docker Compose for the whole stack, a CI workflow, and a README with the test accounts
 
 ### Nice to have
 
-- **File upload** as a second stretch feature — photographs for people and for memories
-- **Scheduled task** — a daily job that expires stale invitations and creates upcoming-birthday reminders for members
-- Family tree visualisation with SVG connector lines and a highlighted ancestor/descendant path
-- Private memories (kept in the must-have list because it is the cheapest way to express real privacy)
-- Transferring ownership to a nominated successor (story 10)
-- Exporting the tree as JSON or PDF
+- **Story 8** — an Owner's count of profiles still needing details, and a filter that shows only them. It is the only story outside the MVP; the nine others must all work end to end.
+- **Written expiry of invitations** — invitations older than 7 days are already treated as expired when they are read; a job would write that state to the database.
+
+### What was cut from the MVP, and why
+
+Five things in the first draft of this proposal are not in the MVP.
+
+| Cut | Why it was removed |
+| --- | --- |
+| **SVG connector lines** on the tree view | The generation-column layout already shows the structure. Connector lines that align correctly are a known time sink and no requirement asks for them. The ancestor and descendant path is kept: it is the part people actually use, and it costs a fraction of the work. |
+| **"Archive" state for a person** | A second lifecycle for a person, on top of the relation rules. A person is either in the tree or deleted. |
+| **Activity list on the tree** | A second view of data that the person page and the search already reach. It had hidden inside story 6's acceptance criteria as an unnamed screen. |
+| **Birthday reminders** | A stretch of a stretch. Search, filter and pagination is the chosen stretch feature, and reminders would also force a seventh entity to store them. |
+| **Export to JSON or PDF** | Not a requirement, and the tree view already is the readable form of the data. Exporting is therefore not planned in either format. |
+
+**Story 8 was also moved out of the MVP**, for a more interesting reason than the others. Its profile status was originally a stored field on a person with three values (`PLACEHOLDER`, `INCOMPLETE`, `COMPLETE`) — a small state machine that had to be recomputed every time a person or a photograph was edited, plus a dashboard and a filtered screen to show the result. The status is now **derived** from the person's data instead of stored: it is complete when the person has a name, a birth date, and either a photograph or a biography. The feature therefore costs one badge and one filter instead of a screen, a state machine and a dashboard, and it cannot fall out of sync because there is nothing to keep in sync.
 
 ---
 
@@ -93,9 +106,11 @@ Four domain entities (`Tree`, `Person`, `Relation`, `Memory`), one authenticatio
 | `User`       | id, email (unique), passwordHash, displayName, createdAt                                                                                                                  | owns many `Tree`s; holds many `Membership`s; authors many `Memory`s                                                       |
 | `Tree`       | id, name, description, coverPhotoUrl, ownerId, successorId?, createdAt                                                                                                    | belongs to one `User` (owner); may point to a successor `User`; has many `Membership`s, `Person`s, `Relation`s, `Memory`s |
 | `Membership` | id, treeId, userId, role (`OWNER`/`CONTRIBUTOR`/`VIEWER`), status (`INVITED`/`ACTIVE`/`REVOKED`), invitedAt, acceptedAt                                                   | joins `User` and `Tree`; unique per (tree, user) pair                                                                     |
-| `Person`     | id, treeId, fullName, nickname?, gender?, birthDate?, deathDate?, isLiving, photoUrl?, bio, profileStatus (`PLACEHOLDER`/`INCOMPLETE`/`COMPLETE`), createdById, createdAt | belongs to one `Tree`; created by one `User`; is the source of many `Relation`s; has many `Memory`s                       |
+| `Person`     | id, treeId, fullName, nickname?, gender?, birthDate?, deathDate?, isLiving, photoUrl?, bio, createdById, createdAt                                                         | belongs to one `Tree`; created by one `User`; is the source of many `Relation`s; has many `Memory`s                       |
 | `Relation`   | id, treeId, fromId, toId, type (`PARENT`/`SPOUSE`/`FRIEND`/`SIBLING`)                                                                                                     | connects two `Person`s inside one `Tree`; unique per (fromId, toId, type)                                                 |
 | `Memory`     | id, treeId, personId, authorId, title, body, happenedAt?, photoUrl?, visibility (`PRIVATE`/`TREE`), createdAt                                                             | attaches to one `Person`; is written by one `User`; is scoped to one `Tree`                                               |
+
+A person's profile status is **derived, not stored**: a profile counts as complete when the person has a name, a birth date, and either a photograph or a biography. It is not a column, so editing a person can never leave a stale status behind.
 
 ### Why these relations
 
@@ -118,34 +133,20 @@ Why this one and not another:
 - It is cheap and low-risk: one query builder in the service layer, one paginated DTO, one Vue component. No infrastructure, no external service, nothing that can break at deployment.
 - It gives a real unit-test target (the query builder) and a real end-to-end test (page 1, page 2, filtered results), which counts towards the test requirements as well.
 
-**Planned second stretch feature: file upload.** Photographs for people and memories, with type and size limits and local disk storage mounted as a Docker volume.
-
-**Possible third stretch feature: scheduled task.** A daily job that expires invitations older than 7 days and creates birthday reminders for the members of each tree.
-
-**Deliberately not planned: real-time updates.** Several people editing the tree at the same time means conflict handling, reconnection and authentication over a socket — a large amount of work for a feature that the demo does not need. If there is time left at the end, a cheap substitute is to poll a small activity endpoint every 30 seconds and show "3 new memories".
+**File upload is implemented, but it sits in the MVP rather than in the stretch list.** Photographs are the content of a family archive, not an optional extra: an app that records people with no pictures is a contact list. It is kept deliberately small — two endpoints, one upload component reused by both, and one Docker volume.
 
 ---
 
-## Out of scope, and why
+## Out of scope
 
-One story was cut from the MVP, and the reason matters more than the story itself.
-
-**Cut: a general activity feed across the whole family** ("see what everyone did recently").
-
-The tree already has a per-person memory list and a search that reaches any person directly, so the feed would show the same information in a second place. It would also need its own pagination, its own unread state and its own filter set — three more screens of work, for a view that the search and the person pages already cover. It was cut so that the search and the tree view could be finished properly, because those two are what people actually come to the app for. The feature is kept as a possible later addition: if a scheduled activity endpoint is built for the cheap real-time substitute, the feed becomes almost free.
-
-Also out of scope, and why:
-
-| Not planned                                | Reason                                                                                                                                                                                          |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Friend requests, blocking, user profiles   | A friend is only another relation type on a person's page. Adding requests and blocking turns the archive into a social network, which is a different product with a different set of problems. |
-| Chat and messaging between members         | Needs real-time infrastructure and message state, and it is not what a family archive is for.                                                                                                   |
-| Timeline view of the whole family          | A third layout of the same data. The tree view and the filtered list already cover the two ways people look for this information.                                                               |
-| GEDCOM import/export                       | XML parsing is a project of its own. It is a nice addition later, but it would compete with the features that are actually being graded.                                                        |
-| Map and geolocation                        | External map tiles, extra API keys and a deployment dependency for a feature of no real value here.                                                                                             |
-| DNA or ancestry matching                   | Cannot be built meaningfully, and it is not the point of the product.                                                                                                                           |
-| Password reset, email sending, OAuth login | Requires an email provider and external credentials. Invitations are therefore stored in the database and shown on the invited user's home page, and the README documents a seeded invitation.  |
-| Dark mode, i18n, mobile app                | Cosmetic or platform work that does not advance any requirement.                                                                                                                                |
+| Not planned | Reason |
+| --- | --- |
+| Real-time collaborative editing, chat and messaging between members | Conflict handling, reconnection and socket authentication are a large amount of work for a feature the demo does not need, and it is not what a family archive is for. |
+| Friend requests, blocking, member profiles | A friend is only another relation type on a person's page. Requests and blocking turn the archive into a social network, which is a different product with a different set of problems. |
+| Timeline view of the family | A third layout of data that the tree view and the filtered list already cover. |
+| GEDCOM import and export | XML parsing is a project of its own, and it would compete with the features that are actually being graded. |
+| Email delivery and password reset | Requires a mail provider and external credentials. Invitations are therefore stored in the database and shown on the invited user's home page. |
+| Map, DNA matching, dark mode, i18n, mobile app | External services and API keys, or cosmetic work that advances no requirement. |
 
 ---
 
@@ -175,8 +176,8 @@ Seeded by `prisma/seed.ts` and documented in the README.
 
 | Role        | Email                   | Password    | Access                                                   |
 | ----------- | ----------------------- | ----------- | -------------------------------------------------------- |
-| Owner       | `owner@puong.dev`       | `Passw0rd!` | Owner of tree 1 (Nguyễn family) and tree 2 (Trần family) |
+| Owner       | `owner@puong.dev`       | `Passw0rd!` | Owner of tree 1 (Mango family) and tree 2 (Mangosteen family) |
 | Contributor | `contributor@puong.dev` | `Passw0rd!` | Contributor in tree 1, **not a member of tree 2**        |
 | Viewer      | `viewer@puong.dev`      | `Passw0rd!` | Viewer in tree 1, invited (not yet accepted) in tree 2   |
 
-The seed also creates a four-generation tree with about 22 people, shared and private memories, and a few people whose profiles are still incomplete, so that the tree view, the filters and the "needs details" count are all meaningful on a fresh `docker compose up`.
+The seed also creates a four-generation tree with about 22 people, shared and private memories, and a few people whose profiles are still incomplete, so that the tree view and the filters are meaningful on a fresh `docker compose up` and story 8, if it is built, has something to count.

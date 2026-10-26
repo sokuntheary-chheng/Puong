@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 900" width="960" height="900">
+<title>Wireframe — family tree canvas (/trees/:treeId)</title>
+<rect width="960" height="900" fill="#ffffff"/><rect x="0" y="0" width="960" height="30" fill="#efece5"/><rect x="16" y="7" width="620" height="17" rx="8" fill="#ffffff" stroke="#e6d6c4"/><text x="26" y="20" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#867972" font-weight="400" text-anchor="start">puong.dev/trees/t1?person=p04</text><rect x="0" y="30" width="960" height="44" fill="#fffdf9"/><rect x="0" y="860" width="960" height="40" fill="#fffdf9"/><line x1="0" y1="74" x2="960" y2="74" stroke="#e6d6c4"/><line x1="0" y1="860" x2="960" y2="860" stroke="#e6d6c4"/><text x="24" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" fill="#46352f" font-weight="700" text-anchor="start">Puong</text><text x="620" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="700" text-anchor="start">My trees</text><text x="706" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400" text-anchor="start">Log in</text><text x="936" y="58" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Sokuntheary Chheng · owner</text><text x="24" y="885" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" fill="#867972" font-weight="400" text-anchor="start">M1 demo controls ▸   signed-in-as switcher · arm a one-shot failure · reset the data</text>
+<text x="24" y="100" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="400" text-anchor="start">My trees / Mango family</text>
+<text x="24" y="136" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" fill="#46352f" font-weight="700" text-anchor="start">Mango family</text>
+<text x="24" y="158" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="400" text-anchor="start">Four generations of the Mango family, from Mr. Mango and Mrs. Mangosteen in 1935 to the children born after 2010.</text>
+<text x="24" y="178" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" fill="#867972" font-weight="400" text-anchor="start">You are owner here</text>
+<rect x="790" y="112" width="146" height="36" rx="8" fill="#b9634b" stroke="#b9634b"/>
+<text x="863" y="135" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#fffdf9" font-weight="600" text-anchor="middle">Add a memory</text>
+<rect x="24" y="196" width="296" height="64" rx="12" fill="#f7f1e8" stroke="#e6d6c4"/>
+<text x="40" y="220" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" fill="#867972" font-weight="400" text-anchor="start">Family members</text>
+<text x="40" y="248" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="20" fill="#46352f" font-weight="700" text-anchor="start">23</text>
+<rect x="332" y="196" width="296" height="64" rx="12" fill="#f7f1e8" stroke="#e6d6c4"/>
+<text x="348" y="220" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" fill="#867972" font-weight="400" text-anchor="start">Generations</text>
+<text x="348" y="248" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="20" fill="#46352f" font-weight="700" text-anchor="start">4</text>
+<rect x="640" y="196" width="296" height="64" rx="12" fill="#f7f1e8" stroke="#e6d6c4"/>
+<text x="656" y="220" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" fill="#867972" font-weight="400" text-anchor="start">Memories</text>
+<text x="656" y="248" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="20" fill="#46352f" font-weight="700" text-anchor="start">5</text>
+<rect x="24" y="272" width="912" height="468" rx="12" fill="#fffdf9" stroke="#e6d6c4"/>
+<rect x="36" y="282" width="134" height="32" rx="8" fill="#fffdf9" stroke="#e6d6c4"/>
+<rect x="48" y="291" width="12" height="12" rx="3" fill="none" stroke="#b9634b" stroke-width="1.6"/>
+<text x="68" y="303" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#46352f" font-weight="600" text-anchor="start">Family tree</text>
+<text x="192" y="303" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="400" text-anchor="start">Memories</text>
+<rect x="744" y="286" width="26" height="26" rx="8" fill="#fffdf9" stroke="#e6d6c4"/>
+<text x="757" y="304" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#46352f" font-weight="400" text-anchor="middle">−</text>
+<text x="790" y="304" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="400" text-anchor="middle">80%</text>
+<rect x="816" y="286" width="26" height="26" rx="8" fill="#fffdf9" stroke="#e6d6c4"/>
+<text x="829" y="304" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#46352f" font-weight="400" text-anchor="middle">+</text>
+<rect x="862" y="286" width="26" height="26" rx="8" fill="#fffdf9" stroke="#e6d6c4"/>
+<rect x="869" y="293" width="12" height="12" fill="none" stroke="#46352f" stroke-width="1.4"/>
+<line x1="24" y1="318" x2="936" y2="318" stroke="#e6d6c4"/>
+<line x1="381" y1="382" x2="405" y2="382" stroke="#b9634b" stroke-opacity="0.55" stroke-width="1.5"/>
+<path d="M393 414V435H306V456" fill="none" stroke="#e6d6c4" stroke-width="1.5"/>
+<path d="M393 414V435H480V456" fill="none" stroke="#e6d6c4" stroke-width="1.5"/>
+<line x1="381" y1="488" x2="405" y2="488" stroke="#b9634b" stroke-opacity="0.55" stroke-width="1.5"/>
+<path d="M393 520V541H306V562" fill="none" stroke="#e6d6c4" stroke-width="1.5"/>
+<path d="M393 520V541H480V562" fill="none" stroke="#e6d6c4" stroke-width="1.5"/>
+<text x="480" y="340" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="600" text-anchor="middle">GENERATION 1</text>
+<rect x="231" y="350" width="150" height="64" rx="12" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1"/>
+<text x="247" y="376" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#46352f" font-weight="600" text-anchor="start">Mr. Mango</text>
+<text x="247" y="394" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">1935 – 2010</text>
+<rect x="405" y="350" width="150" height="64" rx="12" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1"/>
+<text x="421" y="376" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#46352f" font-weight="600" text-anchor="start">Mrs. Mangosteen</text>
+<text x="421" y="394" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">1938 –</text>
+<rect x="579" y="350" width="150" height="64" rx="12" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1"/>
+<text x="595" y="376" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#46352f" font-weight="600" text-anchor="start">Apple Bottom</text>
+<text x="595" y="394" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">1959 –</text>
+<text x="595" y="408" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#8d5140" font-weight="400" font-style="italic" text-anchor="start">not linked yet</text>
+<text x="480" y="446" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="600" text-anchor="middle">GENERATION 2</text>
+<rect x="231" y="456" width="150" height="64" rx="12" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1"/>
+<text x="247" y="482" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#46352f" font-weight="600" text-anchor="start">Jack Fruitson</text>
+<text x="247" y="500" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">1960 –</text>
+<rect x="405" y="456" width="150" height="64" rx="12" fill="#f7f1e8" stroke="#b9634b" stroke-width="2"/>
+<text x="421" y="482" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#46352f" font-weight="600" text-anchor="start">Cherry Berry</text>
+<text x="421" y="500" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">1962 –</text>
+<rect x="579" y="456" width="150" height="64" rx="12" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1"/>
+<text x="595" y="482" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#46352f" font-weight="600" text-anchor="start">Sir Watermelon</text>
+<text x="595" y="500" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">1963 –</text>
+<text x="745" y="494" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#867972" font-weight="400" text-anchor="start">… 4 more</text>
+<text x="480" y="552" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="600" text-anchor="middle">GENERATION 3</text>
+<rect x="231" y="562" width="150" height="64" rx="12" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1"/>
+<text x="247" y="588" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#46352f" font-weight="600" text-anchor="start">Chheng Sokuntheary</text>
+<text x="247" y="606" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">1985 –</text>
+<rect x="405" y="562" width="150" height="64" rx="12" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1"/>
+<text x="421" y="588" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#46352f" font-weight="600" text-anchor="start">Papaya Parker</text>
+<text x="421" y="606" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">1988 –</text>
+<rect x="579" y="562" width="150" height="64" rx="12" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1"/>
+<text x="595" y="588" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#46352f" font-weight="600" text-anchor="start">Grape Gatsby</text>
+<text x="595" y="606" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" text-anchor="start">1987 –</text>
+<text x="745" y="600" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#867972" font-weight="400" text-anchor="start">… 5 more</text>
+<rect x="24" y="640" width="4" height="100" fill="#b9634b"/>
+<text x="44" y="668" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#46352f" font-weight="700" text-anchor="start">Cherry Berry</text>
+<text x="44" y="692" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="600" text-anchor="start">SPOUSE</text>
+<text x="44" y="712" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#b9634b" font-weight="400" text-anchor="start">Jack Fruitson</text>
+<text x="260" y="692" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="600" text-anchor="start">CHILDREN</text>
+<text x="260" y="712" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#b9634b" font-weight="400" text-anchor="start">Chheng Sokuntheary, Papaya Parker</text>
+<text x="560" y="692" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="600" text-anchor="start">PARENTS</text>
+<text x="560" y="712" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="400" font-style="italic" text-anchor="start">not recorded in this tree</text>
+<text x="936" y="732" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#b9634b" font-weight="600" text-anchor="end">Open Cherry Berry’s page →</text>
+<rect x="24" y="752" width="450" height="84" rx="12" fill="#fffdf9" stroke="#e6d6c4"/>
+<rect x="40" y="770" width="32" height="32" rx="8" fill="#f7f1e8"/>
+<text x="84" y="786" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#46352f" font-weight="600" text-anchor="start">Family memories</text>
+<text x="84" y="808" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" fill="#867972" font-weight="400" text-anchor="start">Preserve stories and photographs</text>
+<rect x="486" y="752" width="450" height="84" rx="12" fill="#fffdf9" stroke="#e6d6c4"/>
+<rect x="502" y="770" width="32" height="32" rx="8" fill="#f7f1e8"/>
+<text x="546" y="786" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#46352f" font-weight="600" text-anchor="start">Life events</text>
+<text x="546" y="808" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" fill="#867972" font-weight="400" text-anchor="start">Birthdays, milestones, anniversaries</text>
+<text x="546" y="826" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" fill="#867972" font-weight="400" font-style="italic" text-anchor="start">Not in M1 yet</text>
+<g><circle cx="204" cy="15" r="9" fill="#b9634b"/><text x="204" y="18.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">1</text></g>
+<g><circle cx="300" cy="15" r="9" fill="#b9634b"/><text x="300" y="18.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">2</text></g>
+<g><circle cx="863" cy="114" r="9" fill="#b9634b"/><text x="863" y="117.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">3</text></g>
+<g><circle cx="352" cy="204" r="9" fill="#b9634b"/><text x="352" y="207.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">4</text></g>
+<g><circle cx="170" cy="174" r="9" fill="#b9634b"/><text x="170" y="177.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">5</text></g>
+<g><circle cx="726" cy="299" r="9" fill="#b9634b"/><text x="726" y="302.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">6</text></g>
+<g><circle cx="745" cy="356" r="9" fill="#b9634b"/><text x="745" y="359.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">7</text></g>
+<g><circle cx="440" cy="435" r="9" fill="#b9634b"/><text x="440" y="438.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">8</text></g>
+<g><circle cx="565" cy="470" r="9" fill="#b9634b"/><text x="565" y="473.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">9</text></g>
+<g><circle cx="900" cy="662" r="9" fill="#b9634b"/><text x="900" y="665.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">10</text></g>
+<g><circle cx="440" cy="772" r="9" fill="#b9634b"/><text x="440" y="775.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">11</text></g>
+</svg>
