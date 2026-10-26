@@ -223,7 +223,7 @@ function page(name, H, body, title) {
       cards: [
         ['Jack Fruitson', '1960 –', false],
         ['Cherry Berry', '1962 –', false],
-        ['Sir Watermelon', '1963 –', false],
+        ['Ms. Watermelon', '1963 –', false],
       ],
       more: '… 4 more',
       selected: 1,
@@ -396,7 +396,7 @@ function page(name, H, body, title) {
     T(40, 324, 'Mrs. Mangosteen', { size: 13, fill: ACCENT }),
     BOX(340, 276, 300, 64),
     T(356, 300, 'CHILDREN', { size: 10.5, fill: MUTED, weight: 600 }),
-    T(356, 324, 'Jack Fruitson, Sir Watermelon, Peachy Chan', { size: 13, fill: ACCENT }),
+    T(356, 324, 'Jack Fruitson, Ms. Watermelon, Peachy Chan', { size: 13, fill: ACCENT }),
     LINE(24, 368, 936, 368),
     T(24, 402, 'Memories', { size: 16, weight: 700 }),
     T(936, 402, '+ Add a memory', { size: 13, weight: 600, fill: ACCENT, anchor: 'end' }),
