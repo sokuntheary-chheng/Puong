@@ -18,7 +18,7 @@ Status of the milestones so far:
 | M0 Proposal | 3 | complete | `m0` → `85a82d6` |
 | M1 Frontend prototype | 5 | complete | `m1` → `1bd5a7f` |
 | M2 Backend API | 7 | complete | `m2` → `4955663` |
-| M3 Integrated app | 9 | complete | `m3` |
+| M3 Integrated app | 9 | complete | `m3` → `38d1894` |
 | M4 Feature complete | 12 | not started | `m4` |
 | M5 Deployed | 14 | not started | `m5` |
 
