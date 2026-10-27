@@ -2,8 +2,13 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AsyncState from '../components/AsyncState.vue';
+import MemberInvite from '../components/MemberInvite.vue';
+import PersonForm from '../components/PersonForm.vue';
+import RelationForm from '../components/RelationForm.vue';
 import TreeCanvas from '../components/TreeCanvas.vue';
+import TreeSettings from '../components/TreeSettings.vue';
 import { useStringParam, useStringQuery } from '../composables/useRouteString';
+import { ApiError, deletePerson } from '../services/api';
 import { useMemoriesStore } from '../stores/memories';
 import { useSessionStore } from '../stores/session';
 import { useTreeStore } from '../stores/tree';
@@ -145,6 +150,101 @@ function select(personId: string): void {
 function personName(personId: string): string {
   return store.find(personId)?.fullName ?? personId;
 }
+
+/* ------------------------------------------------------------------ */
+/* M4 — the write actions this screen was missing                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Which of the two M4 forms is open. A panel rather than a route, for the
+ * same reason the create-tree form on Home is one: these are two or three
+ * fields over data that is already on screen, and a route would add a
+ * guard, a loading state and a way to lose the tree you were editing.
+ */
+const panel = ref<'none' | 'new-person' | 'edit-person' | 'relations'>('none');
+const editingPerson = ref<Person | null>(null);
+const actionError = ref<string | null>(null);
+
+const isOwner = computed(() => store.myRole === 'OWNER');
+
+function openNewPerson(): void {
+  actionError.value = null;
+  editingPerson.value = null;
+  panel.value = 'new-person';
+}
+
+function openEditPerson(person: Person): void {
+  actionError.value = null;
+  editingPerson.value = person;
+  panel.value = 'edit-person';
+}
+
+function closePanel(): void {
+  panel.value = 'none';
+  editingPerson.value = null;
+}
+
+/**
+ * FR-4.4 / FR-4.5 — who may edit a person.
+ *
+ * The API decides this too (and answers 403 when the browser's opinion is
+ * wrong), so this is not the rule: it is the difference between a button
+ * that works and a button that always fails. A contributor sees it on their
+ * own records only; an owner sees it on all of them; a viewer never does.
+ */
+function mayEdit(person: Person | null): boolean {
+  if (!store.canWrite || person === null) return false;
+  if (isOwner.value) return true;
+  return person.createdById === session.currentUserId;
+}
+
+function onPersonSaved(person: Person): void {
+  store.putPerson(person);
+  closePanel();
+}
+
+async function onDeletePerson(person: Person): Promise<void> {
+  const confirmed = window.confirm(
+    `Delete ${person.fullName} and everything attached to them — their links and memories? This cannot be undone.`,
+  );
+  if (!confirmed) return;
+
+  actionError.value = null;
+  try {
+    await deletePerson(treeId.value, person.id);
+    store.dropPerson(person.id);
+    if (selectedPersonId.value === person.id) {
+      panel.value = 'none';
+      await router.push({ name: 'tree', params: { treeId: treeId.value } });
+    }
+  } catch (reason) {
+    actionError.value =
+      reason instanceof ApiError ? reason.message : 'That person could not be deleted.';
+  }
+}
+
+/* ---- FR-8.3 — the two paths around the selected person ---- */
+
+const ancestorIds = computed(() =>
+  selectedPerson.value == null
+    ? []
+    : [...store.ancestorsOf(selectedPerson.value.id)],
+);
+
+const descendantIds = computed(() =>
+  selectedPerson.value == null
+    ? []
+    : [...store.descendantsOf(selectedPerson.value.id)],
+);
+
+/**
+ * The person the relation form starts on: whoever is selected, or — with
+ * nobody selected — whoever is first. Never an empty select, which would
+ * be a form that cannot be submitted for a reason nobody can see.
+ */
+const relationPersonId = computed(
+  () => selectedPersonId.value || store.people.data[0]?.id || '',
+);
 </script>
 
 <template>
@@ -179,31 +279,55 @@ function personName(personId: string): string {
         </p>
       </div>
 
-      <RouterLink
-        v-if="store.canWrite && memoryTarget"
-        class="head__action"
-        :to="{
-          name: 'memory-new',
-          params: { treeId, personId: memoryTarget.id },
-        }"
-      >
-        <svg
-          class="head__actionicon"
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+      <div class="head__actions">
+        <!-- M4 — the three writes this screen was missing. Every one of
+             them is drawn only where the role permits it (FR-3.6), and the
+             API refuses them again anyway: a hidden button is a courtesy,
+             not a control. -->
+        <button
+          v-if="store.canWrite"
+          type="button"
+          class="head__secondary"
+          @click="openNewPerson"
         >
-          <path d="M12 20h9" />
-          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-        </svg>
-        Add a memory
-      </RouterLink>
+          Add a person
+        </button>
+
+        <button
+          v-if="store.canWrite && store.people.data.length > 1"
+          type="button"
+          class="head__secondary"
+          @click="panel = panel === 'relations' ? 'none' : 'relations'"
+        >
+          Link relatives
+        </button>
+
+        <RouterLink
+          v-if="store.canWrite && memoryTarget"
+          class="head__action"
+          :to="{
+            name: 'memory-new',
+            params: { treeId, personId: memoryTarget.id },
+          }"
+        >
+          <svg
+            class="head__actionicon"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+          </svg>
+          Add a memory
+        </RouterLink>
+      </div>
     </header>
 
     <!-- 2. three quiet counts — supporting information, not the feature -->
@@ -233,6 +357,33 @@ function personName(personId: string): string {
         </dd>
       </div>
     </dl>
+
+    <!-- M4 — the two forms, opened in place above the graph so that the
+         tree they change stays visible behind them. -->
+    <div class="m4forms">
+      <PersonForm
+        v-if="panel === 'new-person' || panel === 'edit-person'"
+        :tree-id="treeId"
+        :person="editingPerson"
+        @saved="onPersonSaved"
+        @close="closePanel"
+      />
+
+      <RelationForm
+        v-if="panel === 'relations' && relationPersonId !== ''"
+        :tree-id="treeId"
+        :person-id="relationPersonId"
+        @close="closePanel"
+      />
+
+      <p
+        v-if="actionError"
+        class="m4forms__error"
+        role="alert"
+      >
+        {{ actionError }}
+      </p>
+    </div>
 
     <!-- 3. the workspace: toolbar above, graph below -->
     <div class="board">
@@ -428,6 +579,8 @@ function personName(personId: string): string {
             :generations="store.generations"
             :relations="store.relations.data"
             :selected-id="selectedPersonId"
+            :ancestor-ids="ancestorIds"
+            :descendant-ids="descendantIds"
             @select="select"
             @zoom-change="zoomPercent = $event"
           />
@@ -517,12 +670,47 @@ function personName(personId: string): string {
               </p>
             </div>
 
+            <p
+              v-if="ancestorIds.length + descendantIds.length > 0"
+              class="panel__path"
+            >
+              Highlighted: {{ ancestorIds.length }} ancestor{{
+                ancestorIds.length === 1 ? '' : 's'
+              }},
+              {{ descendantIds.length }} descendant{{
+                descendantIds.length === 1 ? '' : 's'
+              }}
+              (FR-8.3).
+            </p>
+
             <RouterLink
               class="panel__open"
               :to="{ name: 'person', params: { treeId, personId: selectedPerson.id } }"
             >
               Open {{ selectedPerson.fullName }}'s page
             </RouterLink>
+
+            <!-- FR-4.4 / FR-4.6 — edit and delete, offered only where the
+                 API would allow them. -->
+            <div
+              v-if="mayEdit(selectedPerson)"
+              class="panel__write"
+            >
+              <button
+                type="button"
+                class="panel__btn"
+                @click="openEditPerson(selectedPerson)"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                class="panel__btn panel__btn--danger"
+                @click="onDeletePerson(selectedPerson)"
+              >
+                Delete
+              </button>
+            </div>
           </aside>
         </AsyncState>
       </div>
@@ -596,6 +784,17 @@ function personName(personId: string): string {
           <span class="promo__pending">Not in M1 yet</span>
         </span>
       </div>
+    </div>
+    <!-- M4 — story 2's other half (inviting) and the owner's own panel:
+         rename, delete, nominate a successor. TreeSettings draws its own
+         sections conditionally, so the nominee's accept/decline lands here
+         for whoever it is meant for without a second copy of it. -->
+    <div class="m4sections">
+      <MemberInvite
+        v-if="isOwner"
+        :tree-id="treeId"
+      />
+      <TreeSettings :tree-id="treeId" />
     </div>
   </section>
 </template>
@@ -1014,5 +1213,80 @@ function personName(personId: string): string {
   font-size: 0.75rem;
   font-style: italic;
   color: var(--text-muted);
+}
+
+/* ---- M4: the header's action group, and the forms it opens ---- */
+
+.head__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.head__secondary {
+  min-height: var(--control-height);
+  padding: 0 1rem;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.head__secondary:hover {
+  border-color: var(--primary);
+}
+
+.m4forms {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.m4forms__error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: var(--hairline) solid var(--border);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  font-size: 0.88rem;
+}
+
+.m4sections {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.panel__path {
+  margin: 0.6rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.panel__write {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.panel__btn {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.2rem 0.7rem;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.panel__btn--danger {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 </style>

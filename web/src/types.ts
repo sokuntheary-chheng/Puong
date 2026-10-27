@@ -52,6 +52,52 @@ export interface Membership {
   acceptedAt: string | null;
 }
 
+/**
+ * FR-3.2 — one invitation waiting for my answer, as the home page renders it.
+ *
+ * `membershipId` rather than `id`: this row *is* a membership, but what the
+ * banner acts on is the invitation inside it, and the API names it that way
+ * so the two are never confused with a membership that is already ACTIVE.
+ */
+export interface Invitation {
+  membershipId: string;
+  treeId: string;
+  treeName: string;
+  treeDescription: string | null;
+  invitedBy: string;
+  role: Role;
+  invitedAt: string;
+  /** FR-3.4 — `invitedAt` plus seven days, derived by the server. */
+  expiresAt: string;
+}
+
+/**
+ * FR-9.1 / FR-9.3 — the succession state of one tree.
+ *
+ * Nothing here is optional: "no successor" is `successorId: null`, not a
+ * missing field, so one shape renders both states and a page never has to
+ * distinguish a 404 from an empty nomination.
+ */
+export interface SuccessorInfo {
+  treeId: string;
+  successorId: string | null;
+  successorName: string | null;
+  nominatedAt: string | null;
+  ownerId: string;
+  ownerName: string;
+  ownershipTransferredAt: string | null;
+  previousOwnerId: string | null;
+}
+
+/** FR-9.1 — one pending nomination, offered to the nominee's home page. */
+export interface Successorship {
+  treeId: string;
+  treeName: string;
+  ownerId: string;
+  ownerName: string;
+  nominatedAt: string;
+}
+
 export interface Person {
   id: string;
   treeId: string;

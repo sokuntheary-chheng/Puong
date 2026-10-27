@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
 import { useStringParam } from '../composables/useRouteString';
+import { ApiError, uploadPhoto } from '../services/api';
 import { useMemoriesStore } from '../stores/memories';
 import type { MemoryVisibility } from '../types';
 import {
@@ -41,6 +42,18 @@ const photoName = ref('');
 
 const submitted = ref(false);
 const accepted = ref(false);
+
+/**
+ * The photograph's own request, and its own way of failing.
+ *
+ * Kept apart from `memories.created` because the two are different steps:
+ * this one happens *before* the memory exists, so a failure here means
+ * nothing was saved at all, while a failure there means the photograph went
+ * up and the memory did not. Saying which one it was is the whole reason
+ * for a separate message.
+ */
+const uploading = ref(false);
+const uploadError = ref<string | null>(null);
 
 type Touched = Record<FieldName, boolean>;
 const touched = reactive<Touched>({
@@ -88,6 +101,7 @@ function clearPhoto(): void {
 async function onSubmit(): Promise<void> {
   submitted.value = true;
   accepted.value = false;
+  uploadError.value = null;
   memories.clearCreated();
 
   if (!isValid.value) {
@@ -101,6 +115,26 @@ async function onSubmit(): Promise<void> {
     return;
   }
 
+  /* FR-6.2 — the photograph goes up first, on its own request, and only its
+     url joins the memory. If the upload fails nothing is written: a memory
+     that claims a photograph it does not have is worse than no memory, and
+     the user is told which of the two went wrong. */
+  let photoUrl: string | undefined;
+  if (photo.value !== null) {
+    uploading.value = true;
+    try {
+      photoUrl = (await uploadPhoto(photo.value)).url;
+    } catch (reason) {
+      uploadError.value =
+        reason instanceof ApiError
+          ? reason.message
+          : 'The photograph could not be uploaded. Nothing was saved.';
+      return;
+    } finally {
+      uploading.value = false;
+    }
+  }
+
   accepted.value = await memories.create({
     treeId: treeId.value,
     personId: personId.value,
@@ -108,6 +142,7 @@ async function onSubmit(): Promise<void> {
     body: body.value,
     happenedAt: happenedAt.value,
     visibility: visibility.value,
+    photoUrl,
   });
 }
 
@@ -117,6 +152,7 @@ function resetForm(): void {
   happenedAt.value = '';
   visibility.value = 'TREE';
   clearPhoto();
+  uploadError.value = null;
   submitted.value = false;
   accepted.value = false;
   for (const key of Object.keys(touched) as FieldName[]) touched[key] = false;
@@ -307,12 +343,26 @@ const acceptedSummary = computed(() => [
         </p>
       </div>
 
+      <p
+        v-if="uploadError"
+        class="form__summary"
+        role="alert"
+      >
+        The photograph was refused: {{ uploadError }}
+      </p>
+
       <div class="actions">
         <button
           type="submit"
-          :disabled="memories.created.status === 'loading'"
+          :disabled="uploading || memories.created.status === 'loading'"
         >
-          {{ memories.created.status === 'loading' ? 'Saving…' : 'Save memory' }}
+          {{
+            uploading
+              ? 'Uploading the photograph…'
+              : memories.created.status === 'loading'
+                ? 'Saving…'
+                : 'Save memory'
+          }}
         </button>
         <button
           type="button"
@@ -364,7 +414,7 @@ const acceptedSummary = computed(() => [
         class="accepted__back"
         :to="{ name: 'person', params: { treeId, personId } }"
       >
-        Back to {{ personId }}
+        Back to this person's page
       </RouterLink>
     </div>
   </section>

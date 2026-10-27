@@ -1,9 +1,14 @@
 import type {
+  Invitation,
   Memory,
   MemoryVisibility,
   Membership,
   Person,
   Relation,
+  RelationType,
+  Role,
+  SuccessorInfo,
+  Successorship,
   Tree,
   User,
 } from '../types';
@@ -188,6 +193,18 @@ export function me(): Promise<User> {
   return request<User>('GET', '/auth/me', { endpoint: 'auth.me' });
 }
 
+/**
+ * The accounts that exist, for turning a `userId` into a name.
+ *
+ * A membership record knows an id and nothing else, and the owner picking a
+ * successor has to recognise the person they are picking — a list of ids
+ * would be a decision made blind. The email comes back with it, but nothing
+ * on this screen renders it: the name is the whole point of the call.
+ */
+export function listUsers(): Promise<User[]> {
+  return request<User[]>('GET', '/users', { endpoint: 'users.list' });
+}
+
 /* ------------------------------------------------------------------ */
 /* Trees                                                               */
 /* ------------------------------------------------------------------ */
@@ -207,6 +224,30 @@ export function createTree(input: {
 
 export function getTree(treeId: string): Promise<Tree> {
   return request<Tree>('GET', `/trees/${treeId}`, { endpoint: 'trees.get' });
+}
+
+/**
+ * FR-2.4 — rename or redraw a tree, and FR-9.1 — nominate a successor (or
+ * `null` to withdraw one). Only an OWNER's call reaches the API.
+ */
+export function updateTree(
+  treeId: string,
+  input: {
+    name?: string;
+    description?: string;
+    coverPhotoUrl?: string | null;
+    successorId?: string | null;
+  },
+): Promise<Tree> {
+  return request<Tree>('PATCH', `/trees/${treeId}`, {
+    endpoint: 'trees.update',
+    body: input,
+  });
+}
+
+/** FR-2.4 — delete the tree and everything hanging off it. OWNER only. */
+export function deleteTree(treeId: string): Promise<void> {
+  return request<void>('DELETE', `/trees/${treeId}`, { endpoint: 'trees.delete' });
 }
 
 /* ------------------------------------------------------------------ */
@@ -241,6 +282,82 @@ export async function getMyRole(
 }
 
 /* ------------------------------------------------------------------ */
+/* Invitations — FR-3                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * FR-3.2 — the invitations waiting on *my* answer.
+ *
+ * The API already applies FR-3.4 here: an invitation whose seven days ran
+ * out is not in this list at all, so the home page never offers a button
+ * that is guaranteed to fail.
+ */
+export function listInvitations(): Promise<Invitation[]> {
+  return request<Invitation[]>('GET', '/memberships/mine', {
+    endpoint: 'memberships.invitations',
+  });
+}
+
+/** FR-3.3 — accept my own invitation; the tree joins my list afterwards. */
+export function acceptInvitation(membershipId: string): Promise<Membership> {
+  return request<Membership>('PATCH', `/memberships/${membershipId}`, {
+    endpoint: 'memberships.accept',
+    body: { status: 'ACTIVE' },
+  });
+}
+
+/** FR-3.3 — decline it instead, which sets the membership to `REVOKED`. */
+export function declineInvitation(membershipId: string): Promise<Membership> {
+  return request<Membership>('PATCH', `/memberships/${membershipId}`, {
+    endpoint: 'memberships.decline',
+    body: { status: 'REVOKED' },
+  });
+}
+
+/** FR-3.1 — invite an existing account to a tree by address. */
+export function inviteMember(
+  treeId: string,
+  input: { email: string; role: Role },
+): Promise<Membership> {
+  return request<Membership>('POST', `/trees/${treeId}/members`, {
+    endpoint: 'memberships.invite',
+    body: input,
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Succession — FR-9                                                   */
+/* ------------------------------------------------------------------ */
+
+/** FR-9.1 — who owns this tree, who is nominated, and when it moved. */
+export function getSuccessor(treeId: string): Promise<SuccessorInfo> {
+  return request<SuccessorInfo>('GET', `/trees/${treeId}/successor`, {
+    endpoint: 'successor.get',
+  });
+}
+
+/** FR-9.1 — the nominations waiting for *my* answer, across every tree. */
+export function listSuccessorships(): Promise<Successorship[]> {
+  return request<Successorship[]>('GET', '/successorships', {
+    endpoint: 'successorships.list',
+  });
+}
+
+/** FR-9.2 — the nominee accepts; ownership moves in one transaction. */
+export function acceptSuccessor(treeId: string): Promise<SuccessorInfo> {
+  return request<SuccessorInfo>('POST', `/trees/${treeId}/successor/accept`, {
+    endpoint: 'successor.accept',
+  });
+}
+
+/** FR-9.2 — the nominee declines, and the nomination is withdrawn. */
+export function declineSuccessor(treeId: string): Promise<SuccessorInfo> {
+  return request<SuccessorInfo>('POST', `/trees/${treeId}/successor/decline`, {
+    endpoint: 'successor.decline',
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* People and relations                                                */
 /* ------------------------------------------------------------------ */
 
@@ -257,6 +374,70 @@ export function getPerson(treeId: string, personId: string): Promise<Person> {
 export function listRelations(treeId: string): Promise<Relation[]> {
   return request<Relation[]>('GET', `/trees/${treeId}/relations`, {
     endpoint: 'relations.list',
+  });
+}
+
+/**
+ * FR-4.1 — the fields a form may send when it adds or edits a person.
+ *
+ * `createdById` is absent on purpose, exactly as in the DTO: the API reads
+ * the author from the session, so there is no field here to fill in with
+ * somebody else's name. `''` is accepted for a cleared date and turned into
+ * `null` by the API's `@Transform`.
+ */
+export interface PersonInput {
+  fullName: string;
+  nickname?: string;
+  gender?: Person['gender'];
+  birthDate?: string | null;
+  deathDate?: string | null;
+  isLiving?: boolean;
+  photoUrl?: string | null;
+  bio?: string;
+}
+
+/** FR-4.1 — add a person to a tree. CONTRIBUTOR and above. */
+export function createPerson(treeId: string, input: PersonInput): Promise<Person> {
+  return request<Person>('POST', `/trees/${treeId}/people`, {
+    endpoint: 'people.create',
+    body: input,
+  });
+}
+
+/** FR-4.4 — edit one; 403 unless it is mine or I own the tree. */
+export function updatePerson(
+  treeId: string,
+  personId: string,
+  input: Partial<PersonInput>,
+): Promise<Person> {
+  return request<Person>('PATCH', `/trees/${treeId}/people/${personId}`, {
+    endpoint: 'people.update',
+    body: input,
+  });
+}
+
+/** FR-4.6 — delete one, with its relations and memories. */
+export function deletePerson(treeId: string, personId: string): Promise<void> {
+  return request<void>('DELETE', `/trees/${treeId}/people/${personId}`, {
+    endpoint: 'people.delete',
+  });
+}
+
+/** FR-5.1 — link two people of the same tree. */
+export function createRelation(
+  treeId: string,
+  input: { fromId: string; toId: string; type: RelationType },
+): Promise<Relation> {
+  return request<Relation>('POST', `/trees/${treeId}/relations`, {
+    endpoint: 'relations.create',
+    body: input,
+  });
+}
+
+/** FR-5.5 — unlink. A relation has no editable field, so this is the edit. */
+export function deleteRelation(treeId: string, relationId: string): Promise<void> {
+  return request<void>('DELETE', `/trees/${treeId}/relations/${relationId}`, {
+    endpoint: 'relations.delete',
   });
 }
 
@@ -327,11 +508,85 @@ export function createMemory(input: CreateMemoryInput): Promise<Memory> {
   });
 }
 
+/**
+ * FR-6.4 — edit a memory. 403 unless I wrote it (FR-6.5).
+ *
+ * `treeId` is a path parameter, not a field: it is omitted from the body
+ * type rather than stripped from the body, so a caller cannot send the tree
+ * they are looking at as if it were a field of the memory.
+ */
+export function updateMemory(
+  treeId: string,
+  memoryId: string,
+  input: Partial<Omit<CreateMemoryInput, 'treeId'>>,
+): Promise<Memory> {
+  return request<Memory>('PATCH', `/trees/${treeId}/memories/${memoryId}`, {
+    endpoint: 'memories.update',
+    body: input,
+  });
+}
+
+/** FR-6.4 / FR-6.8 — delete a memory I wrote, or any TREE one as owner. */
+export function deleteMemory(treeId: string, memoryId: string): Promise<void> {
+  return request<void>('DELETE', `/trees/${treeId}/memories/${memoryId}`, {
+    endpoint: 'memories.delete',
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Photographs — FR-6.2, FR-6.3                                        */
+/* ------------------------------------------------------------------ */
+
+export interface UploadedPhoto {
+  url: string;
+  filename: string;
+  sizeBytes: number;
+}
+
+/**
+ * FR-6.2 — send one file to the upload route and get back its url.
+ *
+ * This is the one call in the file that is not JSON: `request()` sets a
+ * `content-type` header on purpose, and setting that by hand on a `FormData`
+ * body would break the multipart boundary the browser is about to write.
+ * Everything else — the same-origin credentials, the 401 handler, the one
+ * error type — is deliberately identical, so a view cannot tell the two
+ * apart except by the payload it gets back.
+ */
+export async function uploadPhoto(file: File): Promise<UploadedPhoto> {
+  const form = new FormData();
+  form.append('file', file, file.name);
+
+  let response: Response;
+  try {
+    response = await fetch(`${BASE}/uploads/photos`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: form,
+    });
+  } catch {
+    throw new ApiError(0, ['Could not reach the API. Is it running?']);
+  }
+
+  if (response.status === 401) onUnauthorized?.();
+  if (!response.ok) throw await toApiError(response);
+  return (await response.json()) as UploadedPhoto;
+}
+
 /* ------------------------------------------------------------------ */
 /* Search — the stretch feature                                        */
 /* ------------------------------------------------------------------ */
 
-export const SEARCH_PAGE_SIZE = 6;
+/**
+ * FR-7.3 — ten results a page.
+ *
+ * The number is shared with the API's `DEFAULT_PAGE_SIZE`, because a page
+ * size the client assumes and the page size the server applies have to agree
+ * for `totalPages` to mean anything: if the client rendered "page 2 of 3"
+ * from six-per-page arithmetic over a ten-per-page answer, the last page
+ * would appear to have results it does not have.
+ */
+export const SEARCH_PAGE_SIZE = 10;
 
 export interface Page<T> {
   items: T[];
@@ -354,6 +609,21 @@ export interface SearchInput {
   kind?: 'people' | 'memories';
   /** `TREE` narrows to shared memories; omit for everything I may see. */
   visibility?: MemoryVisibility;
+  /**
+   * FR-7.2 — the people filters. All three are people-only: a memory has no
+   * generation and no living status, so combining any of them with
+   * `kind: 'memories'` is answered 400 by the API rather than silently
+   * ignored (a filter that quietly does nothing is worse than no filter).
+   *
+   * `living` is a real `boolean`, not a string, because the interesting bug
+   * here is `living: 'false'` being truthy — the form sends the word, this
+   * function converts it, and nothing downstream ever sees a string.
+   */
+  living?: boolean;
+  /** The generation the family rule (FR-5.6) places a person in. */
+  generation?: number;
+  /** Only people taking part in a relation of this type, both ends kept. */
+  relation?: RelationType;
 }
 
 /** The wire shape: tagged, with one of the two payloads present. */
@@ -379,6 +649,11 @@ export async function search(input: SearchInput): Promise<Page<SearchResult>> {
   });
   if (input.kind !== undefined) params.set('kind', input.kind);
   if (input.visibility !== undefined) params.set('visibility', input.visibility);
+  if (input.living !== undefined) params.set('living', String(input.living));
+  if (input.generation !== undefined) {
+    params.set('generation', String(input.generation));
+  }
+  if (input.relation !== undefined) params.set('relation', input.relation);
 
   const page = await request<Page<SearchHit>>(
     'GET',

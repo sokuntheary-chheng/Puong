@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { SEARCH_PAGE_SIZE, search as searchApi } from '../services/api';
-import type { Page, SearchResult } from '../services/api';
-import type { MemoryVisibility } from '../types';
+import type { Page, SearchInput, SearchResult } from '../services/api';
 import { createAsync, run } from './asyncState';
 
 function emptyPage(): Page<SearchResult> {
@@ -23,13 +22,7 @@ export const useSearchStore = defineStore('search', () => {
   /** The query these results belong to, so a stale result is recognisable. */
   const forQuery = ref('');
 
-  async function search(input: {
-    treeId: string;
-    query: string;
-    page: number;
-    kind?: 'people' | 'memories';
-    visibility?: MemoryVisibility;
-  }): Promise<void> {
+  async function search(input: SearchInput): Promise<void> {
     forQuery.value = input.query;
     /* No viewer is passed: FR-6.6 is applied by the API against the session
        cookie, so a search cannot be used to find what the list would not
