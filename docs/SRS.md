@@ -12,11 +12,7 @@
 | **Lecturer** | Chun Thavorac |
 | **Standard** | ISO/IEC/IEEE 29148:2018 (successor to IEEE 830-1998) |
 
-**Revision 1.1 (M4)** adds the three stories written during M4 (§2.3 US‑11 to
-US‑13), and replaces every `planned` in the §4 status column with the state the
-code is actually in, naming for each group the test that proves it and where
-that test lives. FR‑4.7 and FR‑10 remain `optional` — they were never in the
-MVP and are still not built.
+**Revision 1.1 (M4)** adds the three stories written during M4 (§2.3 US‑11 to US‑13) and replaces every `planned` in §4 with the state the code is in. FR‑4.7 and FR‑10 remain `optional`, unbuilt.
 
 ## Table of contents
 
@@ -28,7 +24,7 @@ MVP and are still not built.
 
 ### 1.1 Purpose
 
-This document specifies the functional and non-functional requirements of **Puong**, a web application in which a family records the people related to it, the relations between them, and the memories and photographs attached to them. Every requirement in §3 carries an identifier, and §4 maps each requirement group to the user story it came from, the component that implements it, and the test that proves it.
+This document specifies the functional and non-functional requirements of **Puong**, a web application in which a family records the people related to it, the relations between them, and the memories and photographs attached to them.
 
 ### 1.2 Scope
 
@@ -106,10 +102,7 @@ Seven functional groups, which the ten requirement groups in §3.2 implement: **
 
 ### 2.3 User stories
 
-The thirteen stories below define the scope of the release: nine are in the MVP,
-story 8 is nice to have, and US‑11 to US‑13 were written during M4 after the MVP
-had been walked end to end (`PROPOSAL.md`, *M4 additions*). §4 traces each
-requirement group back to the stories it serves.
+The thirteen stories below define the release: nine are in the MVP, story 8 is nice to have, and US‑11 to US‑13 were written during M4 once the MVP had been walked end to end. §4 traces each requirement group back to them.
 
 | ID | Role | User story |
 |---|---|---|
@@ -123,9 +116,9 @@ requirement group back to the stories it serves.
 | US‑8 | Owner | As an Owner, I want to see which profiles are still incomplete, so that the record gets finished over time. **Nice to have — outside the MVP.** |
 | US‑9 | Member | As any member, I want to search for a person and filter the list, so that I can find anyone quickly. |
 | US‑10 | Owner | As an Owner, I want to nominate a successor who can take over the tree, so that the archive outlives the person who started it. |
-| US‑11 | Member | As a member, I want everything that is waiting for my answer on the first screen I see, so that I never have to go looking for it. *(M4 addition — FR‑3.2, FR‑9.1)* |
-| US‑12 | Contributor | As a Contributor, I want the browser to refuse a bad record with the same sentence the API would use, so that I am told the truth once and in the same words. *(M4 addition — FR‑2.2, FR‑4.1, FR‑4.2)* |
-| US‑13 | Owner | As an Owner, I want the tree to say who it passed to and when, so that a transfer is still a fact after everybody has moved on. *(M4 addition — FR‑9.3)* |
+| US‑11 | Member | As a member, I want everything waiting for my answer on the first screen, so that I never go looking for it. *(M4 — FR‑3.2, FR‑9.1)* |
+| US‑12 | Contributor | As a Contributor, I want the browser to refuse a record with the API's own sentence, so I am told the truth once. *(M4 — FR‑2.2, FR‑4.1, FR‑4.2)* |
+| US‑13 | Owner | As an Owner, I want the tree to say who it passed to and when, so a transfer stays a fact. *(M4 — FR‑9.3)* |
 
 ### 2.4 User characteristics
 
@@ -328,28 +321,24 @@ The MVP has no background job: invitation expiry (FR-3.4) is evaluated when an i
 
 ## 4. Traceability matrix
 
-Each row groups the requirements of one functional area and states the user story it originates from, the component that implements it, and the test that proves it. "Story" refers to the user stories in §2.3. A requirement is *verified* only when the named test exists and passes — every row below was re-run for revision 1.1.
-
-There are three layers of verification, and the matrix names them in this order: **unit** (`api/src/**/*.spec.ts`, against the service layer with its collaborators mocked), **e2e** (`api/test/app.e2e-spec.ts`, against a real PostgreSQL; plus `api/scripts/check-api.cjs`, the live contract harness run by `npm run check`), and **browser** (`e2e/tests/stories.spec.ts`, a Playwright walkthrough of the story itself, which also writes the screenshots in `docs/screenshots/`).
+Each row groups the requirements of one functional area, the story it came from (§2.3), the component that implements it, and the tests that prove it — in three layers, always in this order: **unit** (`api/src/**/*.spec.ts`), **e2e** (`api/test/app.e2e-spec.ts` against PostgreSQL, plus `api/scripts/check-api.cjs`, the live contract harness behind `npm run check`), **browser** (`e2e/tests/stories.spec.ts`, a Playwright walkthrough of the story that also writes `docs/screenshots/`).
 
 | Requirements | Story | Implementation | Verification | Status |
 |---|---|---|---|---|
-| FR-1.1 – FR-1.6 | US‑1, US‑12 | `AuthModule`, `auth.service`, `access.service` | unit `access.service.spec` (role order, unaccepted invitation, 404 vs 403) · e2e "Session (e2e)" + "Rate limiting" in `app.e2e-spec`, and the cookie/revocation rows of `check-api.cjs` · browser: `login()` in every story of `stories.spec.ts` | **verified** |
-| FR-2.1 – FR-2.5 | US‑1, US‑12 | `TreesModule`, `trees.controller` | e2e `check-api.cjs` (tree CRUD, name length, role matrix, 403/404 split) · browser story 1 — `story-01-name-too-short.png`, `story-01-tree-deleted.png` | **verified** |
-| FR-3.1 – FR-3.6 | US‑2, US‑10, US‑11 | `MembershipsModule`, `TreeMembershipGuard`, `stores/inbox` | unit `invitation.spec` (the seven-day rule, including the instant it expires) · e2e "story 2 — inviting a relative by email" in `app.e2e-spec`, `check-api.cjs` · browser stories 2 and 10 — `story-02-invitation-on-home.png`, `story-10-nomination-banner.png` | **verified** |
-| FR-4.1 – FR-4.6 | US‑4, US‑7, US‑12 | `PersonsModule`, `persons.service`, `utils/personValidation` | e2e "story 4 — adding a person" and "story 7" in `app.e2e-spec`, `check-api.cjs` (403 on somebody else's person) · browser stories 4 and 7 — `story-04-name-required.png`, `story-07-others-contributions-untouched.png` | **verified** |
-| FR-4.7 *(nice to have)* | US‑8 *(nice to have)* | *not built* — no count, no badge, no filter | none: the story is outside the MVP and the requirement was never implemented | **optional — not built** |
-| FR-5.1 – FR-5.7 | US‑5 | `RelationsModule`, `RelationService.assertNoAncestorCycle`, `common/generations` | unit `relations.service.spec` (self-link, cross-tree, the short *and* the long loop → 409) and `generations.spec` (highest parent, in-law catch-up, termination on looping data) · e2e "story 5" in `app.e2e-spec` · browser story 5 — `story-05-cycle-refused.png` | **verified** |
-| FR-6.1 – FR-6.8 | US‑6, US‑7 | `MemoriesModule`, `UploadInterceptor`, `uploads.service` | unit `memories.service.spec` (private is 404 not 403, an owner is refused another author's edit, owner may moderate a shared memory) · e2e "story 6 — a photograph, uploaded and served" in `app.e2e-spec`, `check-api.cjs` (type and size) · browser story 6 — `story-06-private-invisible-to-a-viewer.png` · client mirror: `web/scripts/check-modules.mjs` | **verified** |
-| FR-7.1 – FR-7.4 | US‑9 | `SearchModule`, `SearchQueryDto`, `PersonsService.findAll` | unit `search.service.spec` (accent-insensitive match, 10 per page, each of the three filters, people-only when filtered, private memories never returned) · e2e "story 9 — search, filters and ten per page" in `app.e2e-spec` · browser story 9 — `story-09-search-page-two.png` | **verified** |
-| FR-8.1 – FR-8.4 | US‑3 | `TreeViewView.vue`, `TreeCanvas.vue`, `stores/tree.ts` | web `npm run check` → `check-generations.mjs` (three generations from two parent links, oldest first, grouped by generation) · browser story 3 — `story-03-ancestor-and-descendant-path.png` | **verified** |
-| FR-9.1 – FR-9.3 | US‑10, US‑13 | `TreesService.acceptSuccessor`, `SuccessorshipsController`, `TreeSettings.vue` | unit `trees.service.spec` (nominee must be an active contributor or owner, invitation-only refused, viewer refused, the date is kept on a re-nomination and cleared with the id, 409 when nothing is waiting, 403 when the nomination names somebody else) · e2e "story 10 — handing the tree to a successor" in `app.e2e-spec`, `check-api.cjs` · browser story 10 — `story-10-ownership-transferred.png` | **verified** |
-| FR-10.1 *(nice to have)* | US‑2 | `ScheduledTasksService`, `@Cron` — **not built** | none: expiry is evaluated when an invitation is read (FR-3.4), so the job would only write a state the API already decides | **optional — not built** |
-| IF-1.1 – IF-1.7 | — | Global `ApiExceptionFilter`, `ValidationPipe` | e2e "Error contract (e2e)" in `app.e2e-spec` (three-field body, always an array of messages, 404 over 403 for a tree you may not see) · `check-api.cjs` status-code table · Swagger UI asserted by `e2e/tests/stories.spec.ts` | **verified** |
+| FR-1.1 – FR-1.6 | US‑1, US‑12 | `AuthModule`, `auth.service`, `access.service` | unit `access.service.spec` · e2e *Session*, *Rate limiting*, `check-api.cjs` · browser `login()` in every story | **verified** |
+| FR-2.1 – FR-2.5 | US‑1, US‑12 | `TreesModule`, `trees.controller` | e2e `check-api.cjs` (create, name length, role matrix, 403/404) · browser story 1 | **verified** |
+| FR-3.1 – FR-3.6 | US‑2, US‑10, US‑11 | `MembershipsModule`, `TreeMembershipGuard`, `stores/inbox` | unit `invitation.spec` · e2e *story 2*, `check-api.cjs` · browser stories 2, 10 | **verified** |
+| FR-4.1 – FR-4.6 | US‑4, US‑7, US‑12 | `PersonsModule`, `persons.service`, `utils/personValidation` | e2e *story 4*, *story 7*, `check-api.cjs` (403 on another member's person) · browser stories 4, 7 | **verified** |
+| FR-4.7 *(nice to have)* | US‑8 *(nice to have)* | *not built* — no count, no badge, no filter | none: outside the MVP, and nothing claims otherwise | **optional — not built** |
+| FR-5.1 – FR-5.7 | US‑5 | `RelationsModule`, `assertNoAncestorCycle`, `common/generations` | unit `relations.service.spec`, `generations.spec` · e2e *story 5* · browser story 5 | **verified** |
+| FR-6.1 – FR-6.8 | US‑6, US‑7 | `MemoriesModule`, `UploadInterceptor`, `uploads.service` | unit `memories.service.spec` · e2e *story 6*, `check-api.cjs` (type, size) · browser story 6 · client mirror `check-modules.mjs` | **verified** |
+| FR-7.1 – FR-7.4 | US‑9 | `SearchModule`, `SearchQueryDto`, `PersonsService.findAll` | unit `search.service.spec` · e2e *story 9* · browser story 9 | **verified** |
+| FR-8.1 – FR-8.4 | US‑3 | `TreeViewView.vue`, `TreeCanvas.vue`, `stores/tree` | web `npm run check` → `check-generations.mjs` · browser story 3 | **verified** |
+| FR-9.1 – FR-9.3 | US‑10, US‑13 | `TreesService.acceptSuccessor`, `SuccessorshipsController`, `TreeSettings.vue` | unit `trees.service.spec` · e2e *story 10*, `check-api.cjs` · browser story 10 | **verified** |
+| FR-10.1 *(nice to have)* | US‑2 | `ScheduledTasksService`, `@Cron` — **not built** | none: expiry is decided when an invitation is read (FR-3.4) | **optional — not built** |
+| IF-1.1 – IF-1.7 | — | `ApiExceptionFilter`, `ValidationPipe` | e2e *Error contract* · `check-api.cjs` status table · Swagger asserted by `e2e/tests/stories.spec.ts` | **verified** |
 
-The status column is updated at each milestone and is the basis of the features-versus-requirements assessment in the final product grade. *Verified* means the named test exists and passes in the gates run for M4 (`npm test`, `npm run test:e2e`, `npm run check` in `api/`; `npm run check` in `web/`; `npm test` in `e2e/`); *optional — not built* means the requirement was deliberately left out of the MVP and nothing claims otherwise.
-
-**How a story is proved end to end.** `docs/stories-m4.md` is the row-level version of this table: for each of the ten MVP stories it names the commit that carries the code, the test that exercises it, and the screenshot of it working.
+The status column is updated at each milestone and is the basis of the features-versus-requirements assessment in the final product grade. The gates behind *verified* are the API's unit and e2e suites and its live contract harness, the web tier's own checks, and the browser walkthrough of the stories.
 
 ---
 
@@ -365,7 +354,7 @@ The application ships with three seeded accounts, one per role, so that the acce
 | Contributor | `contributor@puong.dev` | `Passw0rd!` | Contributor in the Mango family tree; not a member of the Mangosteen family tree |
 | Viewer | `viewer@puong.dev` | `Passw0rd!` | Viewer in the Mango family tree; invited but not accepted in the Mangosteen family tree |
 
-The seed also creates a four-generation tree of about 22 people with shared and private memories and several deliberately incomplete profiles, so that the tree view, the filters and the "needs details" count are meaningful on a fresh start.
+The seed also creates a four-generation tree of about 22 people with shared and private memories, so that the tree view and the filters are meaningful on a fresh start.
 
 ### 5.2 Glossary of domain rules
 

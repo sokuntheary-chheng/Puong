@@ -9,7 +9,7 @@ Supporting documents for the Puong project.
 | `print.css` | A4 print stylesheet used to render the PDF. |
 | `render-pdf.js` | The exact script that produced the shipped PDF. |
 | `design.md` | Design decisions for M1–M4: where a parentless person is placed, the role × action permission matrix, the six routes, the memory-form validation rules, what is out of scope. |
-| `api.md` | The API contract: one row per endpoint — who may call it, the body, the success, the possible errors — plus the session, the 401/403/404 rules and the error format (M2, rewritten at M3). |
+| `api.md` | The API contract: one row per endpoint — who may call it, the body, the success, the possible errors — plus the session, the 401/403/404 rules and the error format (M2, rewritten at M3, extended at M4 with succession, uploads and the filters). |
 | `erd.md` | The ERD, generated from `api/prisma/schema.prisma` by `erd/build.mjs`. |
 | `security.md` | The week 9 security checklist run on this application: what was fixed, what is listed as a known gap, and what does not apply (M3). |
 | `m1-explain.md` | The graded M1 answer: what state lives in the Pinia store and what stays inside a component, and why. |
@@ -24,7 +24,7 @@ Supporting documents for the Puong project.
 The PDF is generated from `SRS.md` using `print.css`. It stands alone:
 
 - no references to `PROPOSAL.md`, `api.md`, `erd.md`, `MILESTONES.md` or `README.md`
-- the ten user stories are reproduced in §2.3, so §4's traceability matrix is self-explanatory
+- the thirteen stories are reproduced in §2.3, so §4's traceability matrix is self-explanatory
 - §1.4 lists only external standards (IEEE 29148, RFC 7519, RFC 9110, RFC 6749, OWASP ASVS)
 - §5 "Domain reference" holds the test accounts and the domain glossary, and nothing else
 
@@ -32,16 +32,18 @@ It carries a title table with the author, student ID, course and lecturer, a run
 date header on every page, and PDF bookmarks generated from the headings.
 
 Page count was measured by rendering with headless Chrome and reading the PDF page
-count, not estimated. Verified across four renderer settings:
+count, not estimated. The `print.css` row was re-measured for SRS revision 1.1
+(28 October 2026), after M4 added three stories and a status column; the other
+three were measured for revision 1.0 and are indicative.
 
-| Renderer settings | Pages |
-|---|---|
-| `print.css` (10.5 pt, 1.40 line height, 12 mm margins) | **10** |
-| Word default (11 pt, 1.5 line height, 25 mm margins) | 10 |
-| pandoc default (11 pt, 1.4 line height, 20 mm margins) | 10 |
-| Compressed print (10 pt, 1.3 line height, 12 mm margins) | 9 |
+| Renderer settings | Pages | Measured for |
+|---|---|---|
+| `print.css` (10.5 pt, 1.40 line height, 12 mm margins) | **10** | revision 1.1 |
+| Word default (11 pt, 1.5 line height, 25 mm margins) | 10 | revision 1.0 |
+| pandoc default (11 pt, 1.4 line height, 20 mm margins) | 10 | revision 1.0 |
+| Compressed print (10 pt, 1.3 line height, 12 mm margins) | 9 | revision 1.0 |
 
-All four are inside the 8–10 page budget.
+All are inside the 8–10 page budget.
 
 ## Regenerating the PDF
 
@@ -57,7 +59,7 @@ npm init -y && npm install puppeteer marked
 cd /path/to/Puong
 NODE_PATH=/tmp/puong-render/node_modules node docs/render-pdf.js \
   docs/SRS.md docs/IP_Project_Proposal_p20240044.pdf \
-  docs/print.css "21 October 2026" "Puong — Software Requirements Specification"
+  docs/print.css "28 October 2026" "Puong — Software Requirements Specification"
 ```
 
 The two trailing arguments are the running header printed on every page and the PDF
