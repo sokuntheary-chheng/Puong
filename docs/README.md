@@ -13,6 +13,9 @@ Supporting documents for the Puong project.
 | `erd.md` | The ERD, generated from `api/prisma/schema.prisma` by `erd/build.mjs`. |
 | `security.md` | The week 9 security checklist run on this application: what was fixed, what is listed as a known gap, and what does not apply (M3). |
 | `m1-explain.md` | The graded M1 answer: what state lives in the Pinia store and what stays inside a component, and why. |
+| `stories-m4.md` | The M4 evidence: one row per MVP story — the commit that carries it, the test that exercises it, the screenshots it produced (M4). |
+| `demo-m4.md` | The 10-minute demo script: nine steps, each naming the feature it shows (M4). |
+| `screenshots/` | The 28 PNGs written by `e2e/tests/stories.spec.ts` when it runs — not pictures taken by hand (M4). |
 | `wireframes.md` | Seven annotated wireframe sheets — the six main screens plus loading/empty/error (M1 checklist item). |
 | `wireframes/` | The SVG sheets themselves and `build.mjs`, which regenerates them from the route table in `design.md` §3. |
 

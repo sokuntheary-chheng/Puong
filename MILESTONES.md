@@ -288,12 +288,59 @@ the next seven days.
 
 ## M4 Feature complete (week 12)
 
-- [ ] Every MVP user story works end to end
-- [ ] Stretch feature implemented
-- [ ] Unit tests for core services; e2e tests for the main endpoints; all green
-- [ ] Swagger documentation available
+- [x] Every MVP user story works end to end
+- [x] Stretch feature implemented
+- [x] Unit tests for core services; e2e tests for the main endpoints; all green
+- [x] Swagger documentation available
+
+**Evidence.** Nine MVP stories walked in a browser by
+`e2e/tests/stories.spec.ts` — **10 passed, 1 skipped** (story 8, cut from the
+MVP and declared as a skipped test rather than omitted) — producing the 28
+screenshots `docs/stories-m4.md` maps story → commit → test → picture. The
+stretch feature (search, filter, 10 per page) is story 9 in that run. The API
+gates: `npm test` **54**, `npm run test:e2e` **61**, `npm run check` **259**,
+`lint`/`typecheck`/`build` clean; `web`: `lint`, `typecheck`, `check` **36**,
+`build`. Swagger is at `/api/docs` with 25 paths, and one of the eleven browser
+tests asserts that document exists and contains the M4 routes.
+
+**Demo:** `docs/demo-m4.md` — nine steps, 9 min 45 s, each step naming the
+feature it shows, ending on Swagger and the three test gates.
 
 > **Explain: Pick one test. What bug would it catch?**
+>
+> **The test:** `e2e/tests/stories.spec.ts` → *story 10 — nominate a
+> successor, accept, and the ownership moves*. It signs in as the owner,
+> nominates the contributor, signs out, signs in **as the contributor**, and
+> then asserts two things in order: the URL is still `/` (home) and the
+> heading *You have been named a successor* is on the screen — before it
+> accepts and checks that the tree's settings now read *Ownership moved from
+> … to …* with a date.
+>
+> **The bug it catches:** the nominee being carried past the one screen that
+> can answer them. `/` has a shortcut — a member with exactly one tree is
+> taken straight into it — and M4 added a reason to *stay* on home: an
+> invitation or a nomination is waiting there. The inbox that decides this is
+> fetched by two callers at almost the same moment, the route guard and the
+> view it is about to render. If the view's call finds the state still
+> `loading`, skips its own fetch, and reads an empty list as *"nothing
+> pending"*, the guard redirects — the nomination sits in the database, the
+> banner is never drawn, and the feature looks finished in every unit test
+> that only checks `GET /api/successorships` returns the row. That is not a
+> hypothetical: it is the failure this test found while it was being written,
+> and the reason `stores/inbox.ts` now holds the in-flight promise so the
+> second caller waits for the first's answer instead of answering itself.
+>
+> It also catches the two cheaper versions of the same bug: a stale inbox
+> after an account switch (the previous member's list, or an empty one that
+> never refetches), and a regression in the transaction behind *Accept
+> ownership* — if `ownerId`, `previousOwnerId`, `ownershipTransferredAt` and
+> the demotion of the old owner ever stop being written together, the last
+> assertion (`Ownership moved from …`) fails with the tree in a half-changed
+> state.
+>
+> In one sentence: **it asserts what the member sees at the moment the answer
+> matters, so a race between two fetches cannot hide a feature that works on
+> paper.**
 
 ---
 
