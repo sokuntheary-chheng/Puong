@@ -145,13 +145,36 @@ as them.
 
 There is no `?memberId=` any more: the list is the caller's list. The
 parameter is not read, so `GET /api/trees?memberId=somebody-else` answers
-with *your* trees rather than theirs. `ownerId` is not editable — ownership
-transfer is a membership change (story 10), not a field on the row.
+with *your* trees rather than theirs. `ownerId` is not editable from
+outside: nomination goes through the succession endpoints below, and the
+transfer itself happens there too (story 10), not as a field on the row.
+
+### Succession (story 10)
+
+| Method | Path | Who can call | Request body | Success | Errors |
+|---|---|---|---|---|---|
+| GET | `/api/trees/:id/successor` | VIEWER or above | – | 200 `{ successorId?, successorName?, ownerId, ownerName?, previousOwnerId?, nominatedAt?, ownershipTransferredAt? }` | 401, 404 |
+| PATCH | `/api/trees/:id` | OWNER | `{ successorId }` | 200 `Tree` with `successorId` and `successorNominatedAt` set | 400 (empty body), 401, 404 (tree or account), 403, 409 (the nominee is not an active CONTRIBUTOR/OWNER member) |
+| POST | `/api/trees/:id/successor/accept` | the nominated member | – | 200 `Tree` — `ownerId` moves, `previousOwnerId` and `ownershipTransferredAt` are written, the nomination is cleared, and the former owner's membership becomes CONTRIBUTOR, **all in one transaction** | 401, 403 (you were not nominated), 404 |
+| POST | `/api/trees/:id/successor/decline` | the nominated member | – | 200 `Tree` — the nomination is cleared, ownership unchanged | 401, 403, 404 |
+| GET | `/api/successorships` | any signed-in account | – | 200 `Successorship[]` — every tree waiting for *this* account's answer | 401 |
+
+`GET /api/successorships` is deliberately not under `/trees/:id`: the home
+page's question is "is anybody waiting for me?", and asking it once per tree
+would turn the first screen after sign-in into a request per family. There is
+no `userId` parameter — the caller *is* the filter, so no other account's
+nominations can be read.
+
+Nominating is `PATCH /api/trees/:id` with `successorId`, because it is one
+field on the tree row; accepting and declining are their own verbs because
+they change *who the owner is*, which is a different act with a different
+audience.
 
 ### Memberships (roles, scoped per tree)
 
 | Method | Path | Who can call | Request body | Success | Errors |
 |---|---|---|---|---|---|
+| GET | `/api/memberships/mine` | any signed-in account | – | 200 `Membership[]` — the caller's rows across every tree, invitations included (FR-3.2) | 401 |
 | GET | `/api/trees/:treeId/members` | VIEWER or above | – | 200 `Membership[]` (pending invitations included) | 401, 404 (not a member) |
 | GET | `/api/trees/:treeId/members/:userId` | VIEWER or above | – | 200 `Membership`; 404 means *not a member at all*, while a row may still be `INVITED` or `REVOKED` | 401, 404 |
 | POST | `/api/trees/:treeId/members` | OWNER (FR-3.1) | `{ userId, role, status? }` | 201 `Membership` (defaults to `INVITED`) | 400, 401, 404 (tree or account), 403, 409 (already a member) |
@@ -180,15 +203,17 @@ Validation worth knowing: `fullName` is required (FR-4.1); `birthDate` and
 | Method | Path | Who can call | Request body | Success | Errors |
 |---|---|---|---|---|---|
 | GET | `/api/trees/:treeId/relations` | VIEWER or above | – | 200 `Relation[]` | 401, 404 |
-| POST | `/api/trees/:treeId/relations` | CONTRIBUTOR or above | `{ fromId, toId, type }` | 201 `Relation` | 400 (self-link, loop, unknown type), 401, 404 (tree or a person outside it), 403, 409 (same link twice) |
+| POST | `/api/trees/:treeId/relations` | CONTRIBUTOR or above | `{ fromId, toId, type }` | 201 `Relation` | 400 (self-link, unknown type), 401, 404 (tree or a person outside it), 403, 409 (same link twice, or a link that loops the family) |
 | DELETE | `/api/trees/:treeId/relations/:relationId` | CONTRIBUTOR or above | – | 204 | 401, 404, 403 |
 
 `PARENT` reads *`from` is the parent of `to`*; `SPOUSE`, `SIBLING` and
 `FRIEND` are undirected pairs. `FRIEND` is stored but never drawn (FR-5.4).
 
 A `PARENT` link that would make somebody their own ancestor is refused with a
-400: the generation pass (FR-8.1) walks parent edges to place people in bands,
-and a loop would make that walk never finish.
+**409** (FR-5.4): the body is perfectly well-formed, it simply conflicts with
+the graph that is already there — and a loop would make the generation pass
+(FR-8.1), which walks parent edges to place people in bands, never finish.
+M2 answered 400 here; M4 changed the code, not the requirement.
 
 ### Memories
 
@@ -204,23 +229,43 @@ and a loop would make that walk never finish.
 string is accepted and stored as `null`, because a cleared date input is "no
 date", not a date of `""`.
 
+### Uploads (photographs)
+
+| Method | Path | Who can call | Request body | Success | Errors |
+|---|---|---|---|---|---|
+| POST | `/api/uploads/photos` | any signed-in account | `multipart/form-data`, field `file`, one JPEG/PNG/WebP ≤ 5 MB | 201 `{ url }` — the URL to put in `photoUrl`/`photoUrl` on the record itself | 400 (wrong type or size, no file), 401, 413 |
+| GET | `/api/uploads/:filename` | any request the static route accepts | – | 200 the file, `Cache-Control` set | 404 |
+
+The upload happens **before** the person or memory is written: the form sends
+the file, gets a URL back, and submits that URL in the body. Two reasons, and
+the second is the one that matters — a 400 from the record's own validation
+never leaves an orphaned file behind as a side effect of a form that failed,
+and the record's row is never written pointing at a file that does not exist.
+
 ### Search (stretch feature)
 
 | Method | Path | Who can call | Request body | Success | Errors |
 |---|---|---|---|---|---|
-| GET | `/api/trees/:treeId/search?q=&page=&pageSize=&kind=&visibility=` | VIEWER or above | – | 200 `Page<SearchResult>` `{ items, page, pageSize, total, totalPages }` | 400 (`page`/`pageSize` out of range), 401, 404 (no such tree / not a member) |
+| GET | `/api/trees/:treeId/search?q=&page=&pageSize=&kind=&visibility=&relation=&living=&generation=` | VIEWER or above | – | 200 `Page<SearchResult>` `{ items, page, pageSize, total, totalPages }` | 400 (`page`/`pageSize`/`generation` out of range, a `living` that is not `true`/`false`, an unknown enum value), 401, 404 (no such tree / not a member) |
 
 - `q` is matched against names, nicknames, biographies, memory titles and
   memory bodies, **case- and accent-insensitively**: `theary` finds
   `Sokunthéary`.
-- `page` starts at 1 and `pageSize` defaults to 6 (the prototype's page
-  size), capped at 50.
+- `page` starts at 1 and `pageSize` defaults to **10** (FR-7.3), capped at 50.
 - `kind` restricts to `people` or `memories`; `visibility` narrows memories.
+- The three filters of FR-7.2 narrow **people**: `relation=SPOUSE` keeps
+  everyone at either end of a spouse link, `living=true|false` keeps the
+  living or the deceased, and `generation=2` keeps everyone the generation
+  rule placed in band 2. A request carrying any filter is answered with
+  people only — a memory has no generation and no relatives — and `q` may be
+  empty when a filter is given, so filtering is a browse rather than a search.
 - FR-6.6 applies exactly as it does to listing, and for the same reason: the
   author is the session, so search cannot be used to reach what the list
   hides. `?viewerId=` is not a parameter — it is a **400**, because the
   query DTO forbids a field it does not declare.
-- An empty `q` is not an error — it is no search, and returns an empty page.
+- An empty `q` with **no filter** is not an error — it is no search, and
+  returns an empty page. With a filter it is a browse and returns the
+  matching people.
 
 ---
 
@@ -280,15 +325,24 @@ Every non-2xx response, from every endpoint, has exactly these three fields:
 ## Verification
 
 `npm run check` in `api/` runs `scripts/check-api.cjs` against a running,
-seeded API: **192 assertions** over the contract above — every status code in
+seeded API: **259 assertions** over the contract above — every status code in
 each table, the role matrix, the ownership rules, the cookie's attributes, the
-revoked-session 401, the security and rate-limit headers, and the fact that no
-identity field can be claimed from a request body. It cleans up everything it
-creates, so it passes three times in a row against the same database.
+revoked-session 401, the security and rate-limit headers, the succession
+transaction, the upload's type and size rules, the three filters, and the fact
+that no identity field can be claimed from a request body. It cleans up
+everything it creates, so it passes three times in a row against the same
+database.
 
-`npm run test:e2e` runs the Supertest suite (13 tests): the error body's
-shape, the session cookie, revocation after logout, and the rate limit. Both
-suites are part of `wind.md`'s must-have "tests" item; the static gate is
+`npm test` runs the unit suites (54 tests) against the service layer —
+generation placement, the ancestor-cycle walk, invitation expiry, search and
+filtering, memory visibility and the permission decisions. `npm run test:e2e`
+runs the Supertest suite (61 tests): the error body's shape, the session
+cookie, revocation after logout, the rate limit, and every endpoint above
+including a `403` for each restricted action (NFR-3.2).
+
+The browser suite lives one level up in `e2e/` — `npm test` there walks the
+MVP stories end to end and writes `docs/screenshots/`. Both API suites are
+part of `wind.md`'s must-have "tests" item; the static gate is
 `npm run lint && npm run typecheck && npm run build`.
 
 ## Seed data

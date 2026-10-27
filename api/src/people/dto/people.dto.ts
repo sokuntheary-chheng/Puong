@@ -7,10 +7,12 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
 } from 'class-validator';
 import { IsCalendarDate } from '../../common/is-calendar-date.decorator';
 import { IsOnOrAfter } from '../../common/is-on-or-after.decorator';
+import { PHOTO_URL_MESSAGE, PHOTO_URL_PATTERN } from '../../common/photo-url';
 
 export class CreatePersonDto {
   @ApiProperty({
@@ -73,10 +75,16 @@ export class CreatePersonDto {
   @IsBoolean()
   isLiving?: boolean;
 
-  @ApiPropertyOptional({ maxLength: 500 })
+  @ApiPropertyOptional({
+    example: '/api/uploads/3f9c1a7be2d04f5c8a61b7d90e4c2f11.jpg',
+    maxLength: 500,
+    description:
+      'FR-6.2 — the url an upload returned; no other shape is accepted.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @Matches(PHOTO_URL_PATTERN, { message: PHOTO_URL_MESSAGE })
   photoUrl?: string;
 
   @ApiPropertyOptional({

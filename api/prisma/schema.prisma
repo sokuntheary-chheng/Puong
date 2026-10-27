@@ -97,6 +97,20 @@ model Tree {
   successorId   String?
   createdAt     DateTime @default(now())
 
+  /// FR-9.1 — when the nomination was made, so a pending successor can be
+  /// told *when* they were nominated as well as *by whom*.
+  successorNominatedAt DateTime?
+
+  /// FR-9.3 — each transfer is recorded with its date and the account it
+  /// came *from*. Both live on the tree rather than in a seventh table:
+  /// IR-2 fixes the schema at six tables, and a transfer is a property of
+  /// the one tree it happened to. `previousOwnerId` is deliberately a plain
+  /// string with no relation — it is history, and history must survive the
+  /// account leaving (which the schema otherwise refuses: every other
+  /// reference to `User` is `Restrict`).
+  ownershipTransferredAt DateTime?
+  previousOwnerId        String?
+
   owner       User         @relation("TreeOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   successor   User?        @relation("TreeSuccessor", fields: [successorId], references: [id], onDelete: SetNull)
   memberships Membership[]

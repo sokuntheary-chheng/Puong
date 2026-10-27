@@ -33,6 +33,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { RequireRole, TreeRoleGuard } from '../auth/tree-role.guard';
 import {
   CreateMembershipDto,
+  InvitationDto,
   MembershipDto,
   UpdateMembershipDto,
 } from './dto/memberships.dto';
@@ -59,6 +60,17 @@ import { MembershipsService } from './memberships.service';
 @Controller()
 export class MembershipsController {
   constructor(private readonly memberships: MembershipsService) {}
+
+  @Get('memberships/mine')
+  @ApiOperation({
+    summary: 'My pending invitations (FR-3.2)',
+    description:
+      'The banner on the invited account’s home page: every `INVITED` membership of **my** account whose seven days have not run out (FR-3.4), each with the tree it opens and the day it expires. Expired invitations are absent rather than listed — they cannot be accepted, so offering them would be an offer the API refuses.',
+  })
+  @ApiOkResponse({ type: [InvitationDto] })
+  mine(@CurrentUser() actor: Actor): Promise<InvitationDto[]> {
+    return this.memberships.mine(actor.id);
+  }
 
   @Get('trees/:treeId/members')
   @UseGuards(TreeRoleGuard)

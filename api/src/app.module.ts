@@ -10,13 +10,14 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RelationsModule } from './relations/relations.module';
 import { SearchModule } from './search/search.module';
 import { TreesModule } from './trees/trees.module';
+import { UploadsModule } from './uploads/uploads.module';
 import { UsersModule } from './users/users.module';
 
 /**
  * The application root.
  *
  * One module per resource, as the M2 checklist asks — `Users`, `Trees`,
- * `Memberships`, `People`, `Relations`, `Memories`, `Search` — plus
+ * `Memberships`, `People`, `Relations`, `Memories`, `Search`, `Uploads` — plus
  * `PrismaModule`, which is global so that infrastructure is written once
  * instead of imported seven times.
  *
@@ -63,6 +64,7 @@ import { UsersModule } from './users/users.module';
     RelationsModule,
     MemoriesModule,
     SearchModule,
+    UploadsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

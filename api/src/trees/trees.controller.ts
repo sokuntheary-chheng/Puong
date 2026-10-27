@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNoContentResponse,
@@ -21,11 +22,21 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { BAD_REQUEST, FORBIDDEN, NOT_FOUND } from '../common/api-responses';
+import {
+  BAD_REQUEST,
+  CONFLICT,
+  FORBIDDEN,
+  NOT_FOUND,
+} from '../common/api-responses';
 import type { Actor } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { RequireRole, TreeRoleGuard } from '../auth/tree-role.guard';
-import { CreateTreeDto, TreeDto, UpdateTreeDto } from './dto/trees.dto';
+import {
+  CreateTreeDto,
+  SuccessorDto,
+  TreeDto,
+  UpdateTreeDto,
+} from './dto/trees.dto';
 import { TreesService } from './trees.service';
 
 /**
@@ -85,6 +96,64 @@ export class TreesController {
   @ApiNotFoundResponse(NOT_FOUND)
   get(@Param('id') id: string): Promise<TreeDto> {
     return this.trees.get(id);
+  }
+
+  @Get(':id/successor')
+  @UseGuards(TreeRoleGuard)
+  @RequireRole('VIEWER', 'id')
+  @ApiOperation({
+    summary:
+      'Read a tree’s succession — nomination and last transfer (FR-9.1, FR-9.3)',
+    description:
+      'Any member may read it: the successor needs it to answer, the owner needs it to see whether their nomination stands. `successorId: null` means nobody is nominated — it is a 200 with the absence written down, not a 404, because this is a state of the tree rather than a resource that may be missing.',
+  })
+  @ApiParam({ name: 'id', example: 't1' })
+  @ApiOkResponse({ type: SuccessorDto })
+  @ApiNotFoundResponse(NOT_FOUND)
+  successor(@Param('id') id: string): Promise<SuccessorDto> {
+    return this.trees.successorOf(id);
+  }
+
+  @Post(':id/successor/accept')
+  @UseGuards(TreeRoleGuard)
+  @RequireRole('VIEWER', 'id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Accept a nomination and take ownership (FR-9.2)',
+    description:
+      'Only the nominated successor may call it (403 otherwise; 409 if nothing is waiting). Ownership moves in one transaction: the successor becomes `OWNER`, the previous owner is demoted to `CONTRIBUTOR` and stays a member, and the transfer is recorded with its date and the account it came from (FR-9.3).',
+  })
+  @ApiParam({ name: 'id', example: 't1' })
+  @ApiOkResponse({ type: TreeDto })
+  @ApiNotFoundResponse(NOT_FOUND)
+  @ApiForbiddenResponse(FORBIDDEN)
+  @ApiConflictResponse(CONFLICT)
+  acceptSuccessor(
+    @Param('id') id: string,
+    @CurrentUser() actor: Actor,
+  ): Promise<TreeDto> {
+    return this.trees.acceptSuccessor(id, actor.id);
+  }
+
+  @Post(':id/successor/decline')
+  @UseGuards(TreeRoleGuard)
+  @RequireRole('VIEWER', 'id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Decline a nomination (FR-9.2)',
+    description:
+      'Only the nominated successor. The nomination and its date are cleared; nothing about ownership changes, because declining is not a transfer.',
+  })
+  @ApiParam({ name: 'id', example: 't1' })
+  @ApiOkResponse({ type: TreeDto })
+  @ApiNotFoundResponse(NOT_FOUND)
+  @ApiForbiddenResponse(FORBIDDEN)
+  @ApiConflictResponse(CONFLICT)
+  declineSuccessor(
+    @Param('id') id: string,
+    @CurrentUser() actor: Actor,
+  ): Promise<TreeDto> {
+    return this.trees.declineSuccessor(id, actor.id);
   }
 
   @Patch(':id')

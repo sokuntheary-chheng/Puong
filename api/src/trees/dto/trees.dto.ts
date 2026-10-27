@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import { PHOTO_URL_MESSAGE, PHOTO_URL_PATTERN } from '../../common/photo-url';
 
 /**
  * Creating a tree also creates its OWNER membership, so the creator is
@@ -33,12 +40,15 @@ export class CreateTreeDto {
   description?: string;
 
   @ApiPropertyOptional({
-    example: 'https://cdn.puong.dev/trees/mango.jpg',
+    example: '/api/uploads/3f9c1a7be2d04f5c8a61b7d90e4c2f11.jpg',
     maxLength: 500,
+    description:
+      'FR-6.2 — the url an upload returned; no other shape is accepted.',
   })
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @Matches(PHOTO_URL_PATTERN, { message: PHOTO_URL_MESSAGE })
   coverPhotoUrl?: string;
 }
 
@@ -48,11 +58,70 @@ export class UpdateTreeDto extends PartialType(CreateTreeDto) {
   @ApiPropertyOptional({
     example: 'u2',
     nullable: true,
-    description: 'FR-9.1 — the nominated successor, or null for none.',
+    description:
+      'FR-9.1 — nominate a successor (or `null` to withdraw the nomination). The nominee must be an ACTIVE member of this tree whose role is `CONTRIBUTOR` or `OWNER`; ownership itself only moves when they accept (FR-9.2).',
   })
   @IsOptional()
   @IsString()
   successorId?: string | null;
+}
+
+/**
+ * FR-9.1 / FR-9.3 — the state of a tree's succession, read by *any* member:
+ * the successor needs it to answer, and the owner needs it to see whether
+ * their nomination is still standing.
+ *
+ * Both halves are nullable on purpose and the body is never `null`: "who is
+ * the nominated successor" is a state of the tree with a legitimate "nobody",
+ * and answering 200 with the absence written down means one shape for the
+ * client to render instead of a success and a 404 that mean the same thing.
+ *
+ * `previousOwnerId` and `ownershipTransferredAt` are the transfer record of
+ * FR-9.3 — deliberately a plain id with no relation (see `schema.prisma`):
+ * history must survive the account it names leaving.
+ */
+export class SuccessorDto {
+  @ApiProperty({ example: 't1' })
+  treeId: string;
+
+  @ApiProperty({ example: 'u3', nullable: true })
+  successorId: string | null;
+
+  @ApiProperty({ example: 'Auntie Sreyneang', nullable: true })
+  successorName: string | null;
+
+  @ApiProperty({ example: '2026-10-21T08:00:00.000Z', nullable: true })
+  nominatedAt: Date | null;
+
+  @ApiProperty({ example: 'u1' })
+  ownerId: string;
+
+  @ApiProperty({ example: 'Sokuntheary Chheng' })
+  ownerName: string;
+
+  @ApiProperty({ example: '2026-10-22T08:00:00.000Z', nullable: true })
+  ownershipTransferredAt: Date | null;
+
+  @ApiProperty({ example: 'u1', nullable: true })
+  previousOwnerId: string | null;
+}
+
+/** FR-9.1 — one tree that has nominated the signed-in account. */
+export class SuccessorshipDto {
+  @ApiProperty({ example: 't2' })
+  treeId: string;
+
+  @ApiProperty({ example: 'Mangosteen family' })
+  treeName: string;
+
+  @ApiProperty({ example: 'u1' })
+  ownerId: string;
+
+  @ApiProperty({ example: 'Sokuntheary Chheng' })
+  ownerName: string;
+
+  @ApiProperty({ example: '2026-10-21T08:00:00.000Z' })
+  nominatedAt: Date;
 }
 
 export class TreeDto {

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -31,7 +32,11 @@ export class RelationsService {
    *    own great-grandparent. The generations pass (FR-8.1) is derived by
    *    walking parent edges, and a cycle makes that walk never finish; the
    *    check is a graph walk rather than a depth counter because depth is
-   *    what the cycle corrupts.
+   *    what the cycle corrupts. It is **409, not 400** (FR-5.4): the request
+   *    is well-formed, it simply *conflicts with the graph that is already
+   *    there* — which is what 409 means, and what `docs/api.md` now records.
+   *    M2 answered 400 here; M4 changed the code rather than the
+   *    requirement, because the requirement was the right one.
    *
    * A fourth case — the same link twice — is the unique index on
    * `(treeId, fromId, toId, type)` and reaches the client as a 409 through
@@ -132,7 +137,7 @@ export class RelationsService {
     while (queue.length > 0) {
       const current = queue.shift() as string;
       if (current === toId) {
-        throw new BadRequestException([
+        throw new ConflictException([
           `That link would make ${toId} their own ancestor — the tree cannot loop.`,
         ]);
       }

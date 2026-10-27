@@ -469,9 +469,15 @@ async function main() {
   check('PATCH /api/memberships/:id {} → 400', r.status === 400 && isErrorBody(r, 400), r);
 
   /* FR-3.5 — accepting your own invitation is the one membership change a
-     non-owner makes; promoting yourself while you are there is not. */
+     non-owner makes; promoting yourself while you are there is not.
+
+     The seeded invitation (`mb5`) is dated 2026-09-06, so it is expired by
+     the time anybody reads it, and M4's FR-3.4 rule refuses it: accepting
+     is checked against `invitedAt`, which no endpoint can rewrite (the
+     owner *re-sends* an invitation, they do not backdate one). The accept
+     that succeeds is the fresh one further down, in the M4 section. */
   r = await call('PATCH', '/api/memberships/mb5', { status: 'ACTIVE' }, { as: 'viewer' });
-  check('accept my own invitation → 200', r.status === 200 && r.body.status === 'ACTIVE', r);
+  check('accept my own expired invitation → 409 (FR-3.4)', r.status === 409 && isErrorBody(r, 409), r);
 
   r = await call('PATCH', '/api/memberships/mb5', { role: 'OWNER' }, { as: 'viewer' });
   check('promote myself in my own row → 403', r.status === 403 && isErrorBody(r, 403), r);
@@ -589,7 +595,7 @@ async function main() {
   const otherTypeRel = r.body && r.body.id;
 
   r = await call('POST', '/api/trees/t1/relations', { fromId: 'p03', toId: 'p01', type: 'PARENT' });
-  check('POST parent link that loops the tree → 400', r.status === 400 && isErrorBody(r, 400), r);
+  check('POST parent link that loops the tree → 409 (FR-5.4)', r.status === 409 && isErrorBody(r, 409), r);
 
   r = await call('POST', '/api/trees/t1/relations', { fromId: 'p01', toId: 'ghost', type: 'PARENT' });
   check('POST relation to a person outside the tree → 404', r.status === 404 && isErrorBody(r, 404), r);
@@ -832,6 +838,339 @@ async function main() {
   r = await call('GET', '/api/trees/t1/search?q=mango&pageSize=2');
   check('GET search pageSize=2 → at most 2 items', r.status === 200 && r.body.items.length <= 2, r.body.items && r.body.items.length);
 
+
+  /* -------------------------------------------------------- M4: FR-3 */
+  /* The seed's invitation to viewer@ is dated 2026-09-06, so it is       */
+  /* expired by construction — the one fixture that lets FR-3.4 be        */
+  /* checked without waiting a week for a clock.                          */
+
+  r = await call('GET', '/api/memberships/mine', undefined, { as: 'viewer' });
+  check('GET /api/memberships/mine → 200 list', r.status === 200 && Array.isArray(r.body), r.status);
+  check(
+    'FR-3.4 → an expired invitation is not offered on the home page',
+    r.status === 200 && !r.body.some((i) => i.treeId === 't2'),
+    r.body,
+  );
+
+  r = await call('PATCH', '/api/memberships/mb5', { status: 'ACTIVE' }, { as: 'viewer' });
+  check('accepting an expired invitation → 409 (FR-3.4)', r.status === 409 && isErrorBody(r, 409), r);
+
+  r = await call('POST', '/api/trees/t1/members', { email: 'no-such-account@puong.dev', role: 'VIEWER' });
+  check('invite an address with no account → 404 (FR-3.1)', r.status === 404 && isErrorBody(r, 404), r);
+
+  r = await call('POST', '/api/trees/t1/members', { email: 'viewer@puong.dev', role: 'VIEWER' });
+  check('invite somebody who is already a member → 409', r.status === 409 && isErrorBody(r, 409), r);
+
+  r = await call('POST', '/api/trees/t1/members', { userId: 'u3', email: 'viewer@puong.dev', role: 'VIEWER' });
+  check('invite by id *and* email at once → 400 (which one did you mean?)', r.status === 400, r);
+
+  /* Story 2 end to end: a new account, invited by address, accepts. */
+  const invitedEmail = `invitee-${stamp}@puong.dev`;
+  const registerRes = await fetch(`${BASE}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: invitedEmail,
+      displayName: 'Invited Relative',
+      password: 'Passw0rd!',
+    }),
+  });
+  check('register the account that will be invited → 201', registerRes.status === 201, registerRes.status);
+  const invitedCookie = cookieHeaderFrom({
+    setCookie:
+      typeof registerRes.headers.getSetCookie === 'function'
+        ? registerRes.headers.getSetCookie()
+        : [],
+  });
+
+  r = await call('POST', '/api/trees/t1/members', { email: invitedEmail, role: 'VIEWER' });
+  check('POST member by email → 201 INVITED (FR-3.1)', r.status === 201 && r.body.status === 'INVITED', r);
+  const invitationId = r.body && r.body.id;
+
+  r = await call('GET', '/api/memberships/mine', undefined, { cookie: invitedCookie });
+  const offered = r.status === 200 ? r.body.find((i) => i.treeId === 't1') : undefined;
+  check(
+    'FR-3.2 → the invitation shows the tree and the day it expires',
+    offered !== undefined &&
+      offered.treeName === 'Mango family' &&
+      new Date(offered.expiresAt).getTime() - new Date(offered.invitedAt).getTime() === 7 * 24 * 60 * 60 * 1000,
+    r.body,
+  );
+
+  r = await call('GET', '/api/trees', undefined, { cookie: invitedCookie });
+  check('FR-3.5 → the tree is not in their list before they accept', r.status === 200 && !r.body.some((t) => t.id === 't1'), r.body);
+
+  r = await call('PATCH', `/api/memberships/${invitationId}`, { role: 'OWNER' }, { cookie: invitedCookie });
+  check('the invitee cannot promote themselves → 403', r.status === 403 && isErrorBody(r, 403), r);
+
+  r = await call('PATCH', `/api/memberships/${invitationId}`, { status: 'ACTIVE' }, { cookie: invitedCookie });
+  check('accept the invitation → 200 ACTIVE (FR-3.3)', r.status === 200 && r.body.status === 'ACTIVE', r);
+
+  r = await call('GET', '/api/trees', undefined, { cookie: invitedCookie });
+  check('FR-3.5 → now the tree is in their list', r.status === 200 && r.body.some((t) => t.id === 't1'), r.body);
+
+  r = await call('DELETE', `/api/memberships/${invitationId}`);
+  check('cleanup: drop the membership the invitation became → 204', r.status === 204, r.status);
+
+  /* -------------------------------------------------------- M4: FR-9 */
+  r = await call('POST', '/api/trees', { name: `Succession check ${stamp}` });
+  check('POST a tree to run the succession through → 201', r.status === 201 && r.body.id, r);
+  const successionTree = r.body && r.body.id;
+
+  for (const [email, role] of [
+    ['contributor@puong.dev', 'CONTRIBUTOR'],
+    ['viewer@puong.dev', 'VIEWER'],
+  ]) {
+    r = await call('POST', `/api/trees/${successionTree}/members`, {
+      email,
+      role,
+      status: 'ACTIVE',
+    });
+    check(`admit ${email} as ACTIVE ${role} → 201`, r.status === 201 && r.body.status === 'ACTIVE', r);
+  }
+
+  r = await call('GET', '/api/successorships', undefined, { as: 'none' });
+  check('GET /api/successorships with no session → 401', r.status === 401 && isErrorBody(r, 401), r);
+
+  r = await call('GET', '/api/successorships', undefined, { as: 'contributor' });
+  check('GET /api/successorships → 200 empty before any nomination', r.status === 200 && r.body.length === 0, r.body);
+
+  r = await call('PATCH', `/api/trees/${successionTree}`, { successorId: 'ghost' });
+  check('nominate somebody who is not a member → 404 (FR-9.1)', r.status === 404 && isErrorBody(r, 404), r);
+
+  r = await call('PATCH', `/api/trees/${successionTree}`, { successorId: 'u3' });
+  check('nominate a VIEWER → 400 (a viewer cannot take the tree over, FR-9.1)', r.status === 400 && isErrorBody(r, 400), r);
+
+  r = await call('PATCH', `/api/trees/${successionTree}`, { successorId: 'u2' });
+  check('nominate an active contributor → 200 (FR-9.1)', r.status === 200, r.status);
+
+  r = await call('GET', `/api/trees/${successionTree}/successor`);
+  check(
+    'GET .../successor → the nomination with its date and the owner’s name',
+    r.status === 200 &&
+      r.body.successorId === 'u2' &&
+      typeof r.body.nominatedAt === 'string' &&
+      r.body.ownerId === 'u1' &&
+      r.body.ownershipTransferredAt === null,
+    r.body,
+  );
+
+  r = await call('GET', '/api/successorships', undefined, { as: 'contributor' });
+  check(
+    'FR-9.1 → the pending nomination reaches the successor',
+    r.status === 200 && r.body.some((row) => row.treeId === successionTree && row.ownerName === 'Sokuntheary Chheng'),
+    r.body,
+  );
+
+  r = await call('GET', '/api/successorships', undefined, { as: 'viewer' });
+  check('FR-9.1 → and to nobody else in the tree', r.status === 200 && !r.body.some((row) => row.treeId === successionTree), r.body);
+
+  r = await call('POST', `/api/trees/${successionTree}/successor/accept`, undefined, { as: 'owner' });
+  check('the owner cannot accept their own nomination → 403 (FR-9.2)', r.status === 403 && isErrorBody(r, 403), r);
+
+  r = await call('POST', `/api/trees/${successionTree}/successor/accept`, undefined, { as: 'viewer' });
+  check('somebody who was not nominated cannot accept → 403 (FR-9.2)', r.status === 403 && isErrorBody(r, 403), r);
+
+  r = await call('POST', `/api/trees/${successionTree}/successor/accept`, undefined, { as: 'contributor' });
+  check('the nominated successor accepts → 200 (FR-9.2)', r.status === 200, r);
+
+  r = await call('GET', `/api/trees/${successionTree}/successor`, undefined, { as: 'contributor' });
+  check(
+    'FR-9.3 → ownership moved, and the transfer is recorded with its date',
+    r.status === 200 &&
+      r.body.ownerId === 'u2' &&
+      r.body.previousOwnerId === 'u1' &&
+      typeof r.body.ownershipTransferredAt === 'string' &&
+      r.body.successorId === null &&
+      r.body.nominatedAt === null,
+    r.body,
+  );
+
+  r = await call('GET', `/api/trees/${successionTree}/members`, undefined, { as: 'contributor' });
+  check(
+    'FR-9.2 → the previous owner is demoted, not removed',
+    r.status === 200 &&
+      r.body.some((m) => m.userId === 'u1' && m.role === 'CONTRIBUTOR' && m.status === 'ACTIVE') &&
+      r.body.some((m) => m.userId === 'u2' && m.role === 'OWNER' && m.status === 'ACTIVE'),
+    r.body,
+  );
+
+  r = await call('PATCH', `/api/trees/${successionTree}`, { successorId: 'u1' }, { as: 'contributor' });
+  check('the new owner may nominate their predecessor → 200', r.status === 200, r);
+
+  r = await call('POST', `/api/trees/${successionTree}/successor/decline`, undefined, { as: 'owner' });
+  check('the nominee declines → 200 (FR-9.2)', r.status === 200, r.status);
+
+  r = await call('GET', `/api/trees/${successionTree}/successor`);
+  check(
+    'declining clears the nomination and its date together',
+    r.status === 200 && r.body.successorId === null && r.body.nominatedAt === null,
+    r.body,
+  );
+
+  r = await call('POST', `/api/trees/${successionTree}/successor/accept`, undefined, { as: 'contributor' });
+  check('accept when nothing is waiting → 409 (FR-9.2)', r.status === 409 && isErrorBody(r, 409), r);
+
+  r = await call('DELETE', `/api/trees/${successionTree}`, undefined, { as: 'contributor' });
+  check('cleanup: the new OWNER deletes the check tree → 204', r.status === 204, r);
+
+  /* -------------------------------------------------------- M4: FR-6 */
+  const pngBytes = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  );
+
+  const upload = async ({ as = 'owner', type = 'image/png', name = 'photo.png', data = pngBytes } = {}) => {
+    const form = new FormData();
+    form.append('file', new Blob([data], { type }), name);
+    const headers = {};
+    if (sessions[as]) headers.cookie = sessions[as];
+    const res = await fetch(`${BASE}/api/uploads/photos`, {
+      method: 'POST',
+      headers,
+      body: form,
+    });
+    const text = await res.text();
+    let body = null;
+    try {
+      body = text === '' ? null : JSON.parse(text);
+    } catch {
+      body = { __unparsed: text };
+    }
+    return { status: res.status, body, headers: Object.fromEntries(res.headers) };
+  };
+
+  r = await upload({ as: 'none' });
+  check('POST /api/uploads/photos with no session → 401', r.status === 401 && isErrorBody(r, 401), r);
+
+  r = await upload();
+  check(
+    'POST /api/uploads/photos → 201 with a generated name (FR-6.2)',
+    r.status === 201 && /^\/api\/uploads\/[a-f0-9]{32}\.png$/.test(r.body.url),
+    r,
+  );
+  const uploadedUrl = r.status === 201 ? r.body.url : '';
+
+  check('the upload reports the size it stored', r.status === 201 && r.body.sizeBytes === pngBytes.length, r.body);
+
+  r = await upload({ type: 'text/plain', name: 'note.txt', data: Buffer.from('a note') });
+  check('a file that is not a photograph → 400, with the allowed types (FR-6.2)', r.status === 400 && isErrorBody(r, 400), r);
+  check(
+    'the refusal names the three allowed types',
+    r.status === 400 && r.body.message.join(' ').includes('JPEG, a PNG or a WebP'),
+    r.body,
+  );
+
+  r = await upload({ data: Buffer.alloc(5 * 1024 * 1024 + 512 * 1024, 7) });
+  check('a photograph over 5 MB → 400, with the limit stated (FR-6.2)', r.status === 400 && isErrorBody(r, 400), r);
+  check(
+    'the refusal says how big the file was',
+    r.status === 400 && /at most 5 MB/.test(r.body.message.join(' ')),
+    r.body,
+  );
+
+  const photoRes = await fetch(`${BASE}${uploadedUrl}`, {
+    headers: sessions.viewer ? { cookie: sessions.viewer } : {},
+  });
+  check('GET the stored photograph as a member → 200 (FR-6.3)', photoRes.status === 200, photoRes.status);
+  check(
+    'served as an image, with nosniff and a private cache',
+    String(photoRes.headers.get('content-type')).includes('image/png') &&
+      photoRes.headers.get('x-content-type-options') === 'nosniff' &&
+      String(photoRes.headers.get('cache-control')).includes('private'),
+    Object.fromEntries(photoRes.headers),
+  );
+  check(
+    'the bytes that come back are the bytes that went in',
+    (await photoRes.arrayBuffer()).byteLength === pngBytes.length,
+    undefined,
+  );
+
+  const strangerRes = await fetch(`${BASE}${uploadedUrl}`);
+  check('the same photograph with no session → 401 (FR-6.6)', strangerRes.status === 401, strangerRes.status);
+
+  for (const bad of ['/api/uploads/not-generated.png', '/api/uploads/..%2f..%2fpackage.json']) {
+    const res = await fetch(`${BASE}${bad}`, {
+      headers: sessions.owner ? { cookie: sessions.owner } : {},
+    });
+    check(`GET ${bad} → 404, whatever the name`, res.status === 404, res.status);
+  }
+
+  r = await call('POST', `/api/trees/t1/people`, {
+    fullName: 'Foreign Photograph',
+    photoUrl: 'https://someone-elses-server.example/photo.jpg',
+  });
+  check('a photoUrl that is not one of ours → 400', r.status === 400 && isErrorBody(r, 400), r);
+
+  r = await call('POST', '/api/trees/t1/memories', {
+    personId: checkPerson,
+    title: 'The photograph on the wall',
+    body: 'Uploaded by the check.',
+    visibility: 'TREE',
+    photoUrl: uploadedUrl,
+  });
+  check('a memory carries the url the upload returned → 201 (story 6)', r.status === 201 && r.body.photoUrl === uploadedUrl, r);
+  const photographedMemory = r.body && r.body.id;
+
+  r = await call('DELETE', `/api/trees/t1/memories/${photographedMemory}`);
+  check('cleanup: drop the memory the photograph was attached to → 204', r.status === 204, r.status);
+
+  /* -------------------------------------------------------- M4: FR-7 */
+  r = await call('GET', '/api/trees/t1/search?q=a');
+  check(
+    'FR-7.3 → ten results a page by default',
+    r.status === 200 && r.body.pageSize === 10 && r.body.items.length === 10,
+    r.body && { pageSize: r.body.pageSize, items: r.body.items.length },
+  );
+  check(
+    'FR-7.3 → the page count follows the page size',
+    r.status === 200 &&
+      r.body.total > 10 &&
+      r.body.totalPages === Math.ceil(r.body.total / 10),
+    r.body && { total: r.body.total, totalPages: r.body.totalPages },
+  );
+
+  r = await call('GET', '/api/trees/t1/search?q=a&page=2');
+  check('FR-7.3 → the second page is a different ten', r.status === 200 && r.body.page === 2 && r.body.items.length === 10, r.body && r.body.page);
+
+  r = await call('GET', '/api/trees/t1/search?q=&living=false&pageSize=50');
+  check(
+    'FR-7.2 → filter by living status returns exactly the deceased',
+    r.status === 200 && r.body.items.every((i) => i.kind === 'person' && i.person.isLiving === false) && r.body.total === 2,
+    r.body && r.body.total,
+  );
+
+  r = await call('GET', '/api/trees/t1/search?q=&generation=3&pageSize=50');
+  check(
+    'FR-7.2 → filter by generation returns that band only',
+    r.status === 200 &&
+      JSON.stringify(r.body.items.map((i) => i.person.id).sort()) ===
+        JSON.stringify(['p18', 'p19', 'p20', 'p21', 'p22']),
+    r.body && r.body.items.map((i) => i.person.id),
+  );
+
+  r = await call('GET', '/api/trees/t1/search?q=&generation=0&pageSize=50');
+  check(
+    'FR-7.2 → generation 0 is the roots, and never their children',
+    r.status === 200 &&
+      ['p01', 'p02', 'p23'].every((id) => r.body.items.some((i) => i.person.id === id)) &&
+      !r.body.items.some((i) => ['p03', 'p18'].includes(i.person.id)),
+    r.body && r.body.items.map((i) => i.person.id),
+  );
+
+  r = await call('GET', '/api/trees/t1/search?q=&relation=SPOUSE&pageSize=50');
+  check(
+    'FR-7.2 → filtering by relation keeps both ends of every couple',
+    r.status === 200 && r.body.total === 16,
+    r.body && r.body.total,
+  );
+
+  r = await call('GET', '/api/trees/t1/search?q=&kind=memories&living=true');
+  check('FR-7.2 → a filter aimed at memories is refused with 400', r.status === 400 && isErrorBody(r, 400), r);
+
+  r = await call('GET', '/api/trees/t1/search?q=&relation=VIBES');
+  check('a relation outside the enum → 400', r.status === 400 && isErrorBody(r, 400), r);
+
   /* -------------------------------------------------- cleanup + cascade */
   r = await call('DELETE', `/api/trees/t1/people/${ownerPerson}`);
   check('DELETE a person another member created, as OWNER → 204 (FR-4.4)', r.status === 204, r);
@@ -880,6 +1219,13 @@ async function main() {
     '/api/trees/{treeId}/memories',
     '/api/trees/{treeId}/memories/{memoryId}',
     '/api/trees/{treeId}/search',
+    '/api/memberships/mine',
+    '/api/successorships',
+    '/api/trees/{id}/successor',
+    '/api/trees/{id}/successor/accept',
+    '/api/trees/{id}/successor/decline',
+    '/api/uploads/photos',
+    '/api/uploads/{filename}',
   ];
   for (const p of wanted) {
     check(`Swagger documents ${p}`, paths.includes(p), paths);

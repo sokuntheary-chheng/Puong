@@ -8,6 +8,8 @@
 #   db     PostgreSQL 16, data kept in a named volume so `down` does not
 #          lose the family. Only the db port is published, and only so the
 #          API on your host can reach it during development.
+#   uploads a named volume over the API's UPLOAD_DIR, so photographs survive
+#          a rebuild the same way the database does.
 #   api    NestJS. Runs migrations on start; the seed is a separate, opt-in
 #          task (below) because seeding *replaces* the data with the demo
 #          family and should not happen behind your back on a restart.
@@ -63,8 +65,15 @@ services:
       # count people rather than this one container. Keep it false anywhere
       # the API is reachable directly (see api/.env.example).
       TRUST_PROXY: ${TRUST_PROXY:-true}
+      # Photographs are files, not rows (FR-6.2): the directory inside the
+      # container that uploads are written to. It is mounted from a named
+      # volume below, so rebuilding the API image does not take the family's
+      # photographs with it.
+      UPLOAD_DIR: ${UPLOAD_DIR:-uploads}
     ports:
       - '${API_PORT:-3000}:3000'
+    volumes:
+      - puong-uploads:/app/uploads
 
   # Opt-in: `docker compose run --rm seed`. Loads web/src/mock/db.json —
   # the same family the prototype displays — with bcrypt-hashed passwords.
@@ -92,3 +101,4 @@ services:
 
 volumes:
   puong-db:
+  puong-uploads:

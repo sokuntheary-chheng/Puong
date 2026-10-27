@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SuccessorshipsController } from './successorships.controller';
 import { TreesController } from './trees.controller';
 import { TreesService } from './trees.service';
 
@@ -10,7 +11,10 @@ import { TreesService } from './trees.service';
  * each endpoint.
  */
 @Module({
-  controllers: [TreesController],
+  /* `SuccessorshipsController` lives here rather than in its own module
+     because it answers the same service this module already owns — it is
+     "my nominations", read off `TreesService`, not a new resource. */
+  controllers: [TreesController, SuccessorshipsController],
   providers: [TreesService],
   exports: [TreesService],
 })

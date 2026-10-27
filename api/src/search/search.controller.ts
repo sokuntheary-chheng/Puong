@@ -15,7 +15,7 @@ import { SearchService } from './search.service';
 
 /**
  * Search — the stretch feature chosen in `PROPOSAL.md`: search, filter and
- * pagination, 10-ish per page (6, matching the prototype).
+ * pagination, 10 per page (FR-7.3), with FR-7.2's three filters.
  *
  * A query parameter object rather than six loose `@Query()` arguments: it
  * validates `page` and `pageSize` as integers with bounds, which is where a
