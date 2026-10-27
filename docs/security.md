@@ -53,13 +53,18 @@ anybody should have to notice:
 2. `Origin` vs `Host` on every unsafe method, in `AuthGuard` — a cross-site
    POST that *does* carry the cookie is refused with **403** before the
    handler runs. Verified by `curl` with `Origin: http://evil.example`, and
-   by an e2e test.
+   by an e2e test. Behind nginx this depends on the proxy forwarding the host
+   **with its port** (`proxy_set_header Host $http_host` in `web/nginx.conf`):
+   nginx's `$host` drops the port, the browser's `Origin` keeps it, and a
+   comparison that can never match turns every write in the deployed stack
+   into a 403 — which is what the Docker verification of this milestone
+   caught.
 3. The cookie carries no readable token and no `GET` has a side effect, so
    there is nothing to replay silently.
 
 ### Rate limiting on the routes that create a session
 
-Two limits, aimed differently on purpose:
+Three limits, aimed differently on purpose:
 
 | Route | Limit | Where |
 |---|---|---|
