@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 1010" width="1180" height="1010" role="img" aria-label="Puong entity relationship diagram">
+<title>Puong — entity relationship diagram</title>
+<rect x="0" y="0" width="1180" height="1010" fill="#f7f1e8"/>
+<text x="40.0" y="46.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" fill="#46352f" font-weight="600">Puong — entity relationship diagram</text>
+<text x="40.0" y="70.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="400">Six tables, five enums, 12 relationships. Generated from api/prisma/schema.prisma by docs/erd/build.mjs — edit the schema, not the picture.</text>
+<line x1="340.0" y1="223.7" x2="440.0" y2="230.8" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="339.4" y1="232.7" x2="439.4" y2="239.8" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="740.0" y1="230.6" x2="840.0" y2="223.4" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="340.0" y1="212.9" x2="840.0" y2="212.6" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="440.0" y1="384.4" x2="340.0" y2="479.6" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="190.0" y1="330.0" x2="190.0" y2="430.0" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="590.0" y1="387.0" x2="590.0" y2="610.0" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="340.0" y1="657.9" x2="440.0" y2="681.6" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="337.9" y1="666.7" x2="437.9" y2="690.3" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="740.0" y1="370.1" x2="840.0" y2="455.9" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="340.0" y1="615.4" x2="840.0" y2="591.6" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<line x1="340.0" y1="282.7" x2="840.0" y2="514.8" stroke="#b9634b" stroke-width="1.6" opacity="0.75"/>
+<g><rect x="40" y="96" width="300" height="234" rx="14" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1.5"/>
+<path d="M 40 130 H 340" stroke="#e6d6c4"/>
+<rect x="40" y="96" width="300" height="34" rx="14" fill="#b9634b" opacity="0.1"/>
+<path d="M 40 122 H 340" stroke="#b9634b" opacity="0.1"/>
+<text x="54.0" y="119.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#b9634b" font-weight="600">User</text>
+<text x="54.0" y="144.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="700">id</text>
+<text x="326.0" y="144.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="54.0" y="163.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">email</text>
+<text x="326.0" y="163.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="54.0" y="182.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">passwordHash</text>
+<text x="326.0" y="182.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="54.0" y="201.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">displayName</text>
+<text x="326.0" y="201.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="54.0" y="220.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">createdAt</text>
+<text x="326.0" y="220.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">DateTime = now()</text>
+<text x="54.0" y="239.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← ownedTrees</text>
+<text x="326.0" y="239.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Tree[]</text>
+<text x="54.0" y="258.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← successorOf</text>
+<text x="326.0" y="258.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Tree[]</text>
+<text x="54.0" y="277.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← memberships</text>
+<text x="326.0" y="277.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Membership[]</text>
+<text x="54.0" y="296.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← createdPeople</text>
+<text x="326.0" y="296.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Person[]</text>
+<text x="54.0" y="315.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← authoredMemories</text>
+<text x="326.0" y="315.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Memory[]</text>
+</g>
+<g><rect x="440" y="96" width="300" height="291" rx="14" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1.5"/>
+<path d="M 440 130 H 740" stroke="#e6d6c4"/>
+<rect x="440" y="96" width="300" height="34" rx="14" fill="#b9634b" opacity="0.1"/>
+<path d="M 440 122 H 740" stroke="#b9634b" opacity="0.1"/>
+<text x="454.0" y="119.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#b9634b" font-weight="600">Tree</text>
+<text x="454.0" y="144.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="700">id</text>
+<text x="726.0" y="144.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="454.0" y="163.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">name</text>
+<text x="726.0" y="163.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="454.0" y="182.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">description</text>
+<text x="726.0" y="182.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String?</text>
+<text x="454.0" y="201.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">coverPhotoUrl</text>
+<text x="726.0" y="201.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String?</text>
+<text x="454.0" y="220.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ ownerId</text>
+<text x="726.0" y="220.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="454.0" y="239.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ successorId</text>
+<text x="726.0" y="239.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String?</text>
+<text x="454.0" y="258.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">createdAt</text>
+<text x="726.0" y="258.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">DateTime = now()</text>
+<text x="454.0" y="277.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ owner</text>
+<text x="726.0" y="277.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">User</text>
+<text x="454.0" y="296.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ successor</text>
+<text x="726.0" y="296.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">?User</text>
+<text x="454.0" y="315.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← memberships</text>
+<text x="726.0" y="315.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Membership[]</text>
+<text x="454.0" y="334.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← people</text>
+<text x="726.0" y="334.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Person[]</text>
+<text x="454.0" y="353.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← relations</text>
+<text x="726.0" y="353.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Relation[]</text>
+<text x="454.0" y="372.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← memories</text>
+<text x="726.0" y="372.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Memory[]</text>
+</g>
+<g><rect x="840" y="96" width="300" height="233" rx="14" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1.5"/>
+<path d="M 840 130 H 1140" stroke="#e6d6c4"/>
+<rect x="840" y="96" width="300" height="34" rx="14" fill="#b9634b" opacity="0.1"/>
+<path d="M 840 122 H 1140" stroke="#b9634b" opacity="0.1"/>
+<text x="854.0" y="119.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#b9634b" font-weight="600">Membership</text>
+<text x="854.0" y="144.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="700">id</text>
+<text x="1126.0" y="144.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="854.0" y="163.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ treeId</text>
+<text x="1126.0" y="163.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="854.0" y="182.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ userId</text>
+<text x="1126.0" y="182.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="854.0" y="201.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">role</text>
+<text x="1126.0" y="201.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Role</text>
+<text x="854.0" y="220.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">status</text>
+<text x="1126.0" y="220.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">MembershipStatus</text>
+<text x="854.0" y="239.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">invitedAt</text>
+<text x="1126.0" y="239.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">DateTime?</text>
+<text x="854.0" y="258.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">acceptedAt</text>
+<text x="1126.0" y="258.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">DateTime?</text>
+<text x="854.0" y="277.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ tree</text>
+<text x="1126.0" y="277.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Tree</text>
+<text x="854.0" y="296.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ user</text>
+<text x="1126.0" y="296.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">User</text>
+<text x="854.0" y="319.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#867972" font-weight="400" font-style="italic">@@unique(treeId, userId)</text>
+<text x="854.0" y="338.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#867972" font-weight="400" font-style="italic">@@index(userId)</text>
+</g>
+<g><rect x="40" y="430" width="300" height="385" rx="14" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1.5"/>
+<path d="M 40 464 H 340" stroke="#e6d6c4"/>
+<rect x="40" y="430" width="300" height="34" rx="14" fill="#b9634b" opacity="0.1"/>
+<path d="M 40 456 H 340" stroke="#b9634b" opacity="0.1"/>
+<text x="54.0" y="453.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#b9634b" font-weight="600">Person</text>
+<text x="54.0" y="478.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="700">id</text>
+<text x="326.0" y="478.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="54.0" y="497.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ treeId</text>
+<text x="326.0" y="497.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="54.0" y="516.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">fullName</text>
+<text x="326.0" y="516.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="54.0" y="535.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">nickname</text>
+<text x="326.0" y="535.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String?</text>
+<text x="54.0" y="554.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">gender</text>
+<text x="326.0" y="554.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Gender?</text>
+<text x="54.0" y="573.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">birthDate</text>
+<text x="326.0" y="573.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String?</text>
+<text x="54.0" y="592.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">deathDate</text>
+<text x="326.0" y="592.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String?</text>
+<text x="54.0" y="611.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">isLiving</text>
+<text x="326.0" y="611.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Boolean = true</text>
+<text x="54.0" y="630.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">photoUrl</text>
+<text x="326.0" y="630.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String?</text>
+<text x="54.0" y="649.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">bio</text>
+<text x="326.0" y="649.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String?</text>
+<text x="54.0" y="668.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">createdAt</text>
+<text x="326.0" y="668.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">DateTime = now()</text>
+<text x="54.0" y="687.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ tree</text>
+<text x="326.0" y="687.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Tree</text>
+<text x="54.0" y="706.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ createdBy</text>
+<text x="326.0" y="706.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">User</text>
+<text x="54.0" y="725.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ createdById</text>
+<text x="326.0" y="725.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="54.0" y="744.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← fromRelations</text>
+<text x="326.0" y="744.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Relation[]</text>
+<text x="54.0" y="763.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← toRelations</text>
+<text x="326.0" y="763.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Relation[]</text>
+<text x="54.0" y="782.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">← memories</text>
+<text x="326.0" y="782.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Memory[]</text>
+<text x="54.0" y="805.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#867972" font-weight="400" font-style="italic">@@index(treeId)</text>
+</g>
+<g><rect x="440" y="610" width="300" height="214" rx="14" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1.5"/>
+<path d="M 440 644 H 740" stroke="#e6d6c4"/>
+<rect x="440" y="610" width="300" height="34" rx="14" fill="#b9634b" opacity="0.1"/>
+<path d="M 440 636 H 740" stroke="#b9634b" opacity="0.1"/>
+<text x="454.0" y="633.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#b9634b" font-weight="600">Relation</text>
+<text x="454.0" y="658.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="700">id</text>
+<text x="726.0" y="658.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="454.0" y="677.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ treeId</text>
+<text x="726.0" y="677.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="454.0" y="696.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ fromId</text>
+<text x="726.0" y="696.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="454.0" y="715.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ toId</text>
+<text x="726.0" y="715.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="454.0" y="734.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">type</text>
+<text x="726.0" y="734.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">RelationType</text>
+<text x="454.0" y="753.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ tree</text>
+<text x="726.0" y="753.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Tree</text>
+<text x="454.0" y="772.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ from</text>
+<text x="726.0" y="772.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Person</text>
+<text x="454.0" y="791.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ to</text>
+<text x="726.0" y="791.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Person</text>
+<text x="454.0" y="814.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#867972" font-weight="400" font-style="italic">@@unique(treeId, fromId, toId, type)</text>
+<text x="454.0" y="833.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#867972" font-weight="400" font-style="italic">@@index(treeId)</text>
+</g>
+<g><rect x="840" y="430" width="300" height="309" rx="14" fill="#fffdf9" stroke="#e6d6c4" stroke-width="1.5"/>
+<path d="M 840 464 H 1140" stroke="#e6d6c4"/>
+<rect x="840" y="430" width="300" height="34" rx="14" fill="#b9634b" opacity="0.1"/>
+<path d="M 840 456 H 1140" stroke="#b9634b" opacity="0.1"/>
+<text x="854.0" y="453.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" fill="#b9634b" font-weight="600">Memory</text>
+<text x="854.0" y="478.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="700">id</text>
+<text x="1126.0" y="478.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="854.0" y="497.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ treeId</text>
+<text x="1126.0" y="497.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="854.0" y="516.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ personId</text>
+<text x="1126.0" y="516.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="854.0" y="535.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="400">◆ authorId</text>
+<text x="1126.0" y="535.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="854.0" y="554.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">title</text>
+<text x="1126.0" y="554.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="854.0" y="573.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">body</text>
+<text x="1126.0" y="573.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String</text>
+<text x="854.0" y="592.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">happenedAt</text>
+<text x="1126.0" y="592.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String?</text>
+<text x="854.0" y="611.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">photoUrl</text>
+<text x="1126.0" y="611.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">String?</text>
+<text x="854.0" y="630.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">visibility</text>
+<text x="1126.0" y="630.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">MemoryVisibility</text>
+<text x="854.0" y="649.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#46352f" font-weight="400">createdAt</text>
+<text x="1126.0" y="649.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">DateTime = now()</text>
+<text x="854.0" y="668.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ tree</text>
+<text x="1126.0" y="668.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Tree</text>
+<text x="854.0" y="687.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ person</text>
+<text x="1126.0" y="687.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">Person</text>
+<text x="854.0" y="706.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#867972" font-weight="500">→ author</text>
+<text x="1126.0" y="706.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#867972" font-weight="400" text-anchor="end">User</text>
+<text x="854.0" y="729.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#867972" font-weight="400" font-style="italic">@@index(treeId)</text>
+<text x="854.0" y="748.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#867972" font-weight="400" font-style="italic">@@index(personId)</text>
+</g>
+<text x="354.1" y="240.7" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="424.2" y="245.7" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="353.5" y="249.7" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="423.5" y="254.7" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="755.8" y="245.5" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="825.9" y="240.4" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="355.0" y="228.9" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="825.0" y="228.6" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="420.9" y="390.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="342.6" y="464.6" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="178.0" y="349.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="178.0" y="419.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="578.0" y="406.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="578.0" y="599.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="351.8" y="677.1" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="422.6" y="693.8" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="349.8" y="685.8" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="420.6" y="702.6" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="743.6" y="393.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="820.8" y="459.2" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="355.6" y="630.6" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="825.6" y="608.3" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<text x="348.6" y="303.9" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">1</text>
+<text x="821.3" y="523.4" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#b9634b" font-weight="700" text-anchor="middle">N</text>
+<rect x="40" y="848" width="276.5" height="30" rx="15" fill="#fffdf9" stroke="#e6d6c4"/>
+<text x="55.0" y="868.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#46352f" font-weight="400">Role: OWNER · CONTRIBUTOR · VIEWER</text>
+<rect x="328.5" y="848" width="349" height="30" rx="15" fill="#fffdf9" stroke="#e6d6c4"/>
+<text x="343.5" y="868.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#46352f" font-weight="400">MembershipStatus: INVITED · ACTIVE · REVOKED</text>
+<rect x="689.5" y="848" width="378" height="30" rx="15" fill="#fffdf9" stroke="#e6d6c4"/>
+<text x="704.5" y="868.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#46352f" font-weight="400">RelationType: PARENT · SPOUSE · FRIEND · SIBLING</text>
+<rect x="40" y="886" width="262" height="30" rx="15" fill="#fffdf9" stroke="#e6d6c4"/>
+<text x="55.0" y="906.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#46352f" font-weight="400">MemoryVisibility: PRIVATE · TREE</text>
+<rect x="314" y="886" width="240.25" height="30" rx="15" fill="#fffdf9" stroke="#e6d6c4"/>
+<text x="329.0" y="906.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#46352f" font-weight="400">Gender: MALE · FEMALE · OTHER</text>
+<text x="40.0" y="948.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="400">Legend: bold = primary key · ◆ = foreign key column · → = holds the foreign key (many) · ← = collects many rows (one) · 1 —— N = one-to-many</text>
+<text x="40.0" y="968.0" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" fill="#867972" font-weight="400">Date-only columns (birthDate, deathDate, happenedAt) are text in YYYY-MM-DD; timestamps (createdAt, invitedAt, acceptedAt) are timestamptz in UTC.</text>
+</svg>

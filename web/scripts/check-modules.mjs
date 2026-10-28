@@ -26,7 +26,7 @@ const outDir = join(webRoot, '.checks');
 
 const modules = {
   'memoryValidation.mjs': 'src/utils/memoryValidation.ts',
-  'svc.mjs': 'src/services/mockApi.ts',
+  'svc.mjs': 'src/services/api.ts',
   'gen.mjs': 'src/services/generations.ts',
 };
 

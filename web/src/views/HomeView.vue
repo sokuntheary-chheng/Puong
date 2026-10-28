@@ -1,6 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import AsyncState from '../components/AsyncState.vue';
+import {
+  acceptInvitation,
+  acceptSuccessor,
+  ApiError,
+  declineInvitation,
+  declineSuccessor,
+} from '../services/api';
+import type { Invitation, Successorship } from '../types';
+import { useInboxStore } from '../stores/inbox';
+import { useSessionStore } from '../stores/session';
 import { useTreesStore } from '../stores/trees';
 
 /**
@@ -11,18 +22,72 @@ import { useTreesStore } from '../stores/trees';
  * first, the totals second, so a failed list never leaves the counts
  * totalling somebody else's trees.
  *
- * The header carries a primary button, as the reference does, but M1 has
- * no create-tree flow behind it — mockApi can list and read trees, not
- * make one — so it is drawn disabled and says why, rather than sitting
- * there looking ready to work. The counts row below is drawn from the same
- * three states every other screen uses, so a total that is not known yet
- * shows a dash rather than a 0 that looks like an answer.
+ * **Creating a tree (FR-2.1) lives here too**, behind the header's primary
+ * button. It has to: every account starts with no memberships, so without a
+ * way to make the first tree, registering would land somebody on an empty
+ * screen with nothing to do about it. The form opens in place rather than
+ * on a route of its own — it is three fields and a submit, and a route for
+ * it would need its own guard, its own loading state and its own error
+ * handling for no gain in clarity.
+ *
+ * **The two banners above the list are M4's story 2 and story 10**: an
+ * invitation waiting for an answer (FR-3.2) and a nomination waiting for an
+ * answer (FR-9.1). Both are fetched here rather than inside the banner
+ * components because both are *the home page's* business — they say "there
+ * is something waiting for you", which is the first thing this screen
+ * should say and the last thing it should stop saying once answered.
+ *
+ * The counts row below is drawn from the same three states every other
+ * screen uses, so a total that is not known yet shows a dash rather than a
+ * 0 that looks like an answer.
  */
 const store = useTreesStore();
+const router = useRouter();
+const session = useSessionStore();
+
+/**
+ * FR-3.2 and FR-9.1 — the two lists of things waiting for an answer.
+ *
+ * They come from `stores/inbox` rather than being fetched here, because the
+ * route guard has already asked for them before this view was ever created
+ * (see `router/index.ts`): reading the store means "/" shows the banners
+ * without a second round trip, and the guard's answer and the view's answer
+ * can never disagree.
+ *
+ * The templates below reach them as `inbox.invitations` / `inbox.nominations`.
+ */
+const inbox = useInboxStore();
+
+/**
+ * One busy flag for the four banner buttons.
+ *
+ * Accepting twice is not harmless: the second click is a request in flight
+ * against a membership that has already changed, and the loser of that race
+ * is a 409 the user did not ask for. Disabling every button in the banners
+ * while any of them runs is simpler than per-row state, and none of these
+ * lists is long enough for it to cost anything.
+ */
+const acting = ref(false);
+const bannerError = ref<string | null>(null);
+
+function messageOf(reason: unknown, fallback: string): string {
+  return reason instanceof ApiError ? reason.message : fallback;
+}
 
 onMounted(() => {
   void store.fetch();
+  void inbox.load();
 });
+
+/* The account switcher changes who "me" is without navigating anywhere,
+   and both lists are answered per session — so switching member has to
+   re-read them, exactly as the memories list does on the person page. */
+watch(
+  () => session.currentUserId,
+  () => {
+    void inbox.refresh();
+  },
+);
 
 const isEmpty = computed(() => store.trees.data.length === 0);
 
@@ -37,6 +102,131 @@ function statValue(ready: boolean, count: number): string {
 function initial(name: string): string {
   return name.trim().charAt(0).toUpperCase();
 }
+
+/* ---- answer an invitation (story 2, FR-3.3) ---- */
+
+async function answerInvitation(invitation: Invitation, accept: boolean): Promise<void> {
+  if (acting.value) return;
+  acting.value = true;
+  bannerError.value = null;
+
+  try {
+    if (accept) await acceptInvitation(invitation.membershipId);
+    else await declineInvitation(invitation.membershipId);
+
+    /* Accepting changes which trees are mine, so the list itself has to be
+       re-read rather than having the new tree pushed into it by hand —
+       the list is the server's answer, not a local collection. */
+    inbox.invitations.data = inbox.invitations.data.filter(
+      (row) => row.membershipId !== invitation.membershipId,
+    );
+    await store.fetch();
+  } catch (reason) {
+    bannerError.value = messageOf(
+      reason,
+      'That invitation could not be answered. Please try again.',
+    );
+  } finally {
+    acting.value = false;
+  }
+}
+
+/* ---- answer a nomination (story 10, FR-9.2) ---- */
+
+async function answerNomination(nomination: Successorship, accept: boolean): Promise<void> {
+  if (acting.value) return;
+  acting.value = true;
+  bannerError.value = null;
+
+  try {
+    if (accept) await acceptSuccessor(nomination.treeId);
+    else await declineSuccessor(nomination.treeId);
+
+    inbox.nominations.data = inbox.nominations.data.filter(
+      (row) => row.treeId !== nomination.treeId,
+    );
+    await store.fetch();
+  } catch (reason) {
+    bannerError.value = messageOf(
+      reason,
+      'That nomination could not be answered. Please try again.',
+    );
+  } finally {
+    acting.value = false;
+  }
+}
+
+/** An invitation is a date, and the banner says which day it runs out. */
+function dayOf(value: string): string {
+  return value.slice(0, 10);
+}
+
+/* ---- create a tree ---- */
+
+const creating = ref(false);
+const name = ref('');
+const description = ref('');
+const createError = ref<string | null>(null);
+const saving = ref(false);
+
+function openForm(): void {
+  creating.value = true;
+  createError.value = null;
+}
+
+function closeForm(): void {
+  creating.value = false;
+  createError.value = null;
+  name.value = '';
+  description.value = '';
+}
+
+/**
+ * FR-2.2 — checked here as well as in the API.
+ *
+ * The form is `novalidate`, so the browser will submit a one-character name
+ * and the API will be the one to refuse it. Catching it first means the
+ * message is about *this* form instead of arriving as a paragraph of API
+ * error text, and it costs one comparison. The API keeps its own check: a
+ * rule the client can be talked out of is not a rule.
+ */
+function nameProblem(value: string): string | null {
+  const length = value.trim().length;
+  if (length < 2) return 'A family name needs at least 2 characters.';
+  if (length > 120) return 'A family name may be at most 120 characters.';
+  return null;
+}
+
+async function onCreate(): Promise<void> {
+  if (saving.value) return;
+  createError.value = null;
+
+  const problem = nameProblem(name.value);
+  if (problem !== null) {
+    createError.value = problem;
+    return;
+  }
+
+  saving.value = true;
+
+  try {
+    const tree = await store.create({
+      name: name.value.trim(),
+      ...(description.value.trim() === '' ? {} : { description: description.value.trim() }),
+    });
+    closeForm();
+    /* Straight into the new tree: making a family and then being shown a
+       list containing it would be one screen too many. */
+    await router.push({ name: 'tree', params: { treeId: tree.id } });
+  } catch (reason) {
+    createError.value =
+      reason instanceof ApiError
+        ? reason.message
+        : 'The tree could not be created. Please try again.';
+  } finally {
+    saving.value = false;
+  }
+}
 </script>
 
 <template>
@@ -49,16 +239,12 @@ function initial(name: string): string {
         </p>
       </div>
 
-      <!-- The reference puts a primary action here. M1 has no create-tree
-           flow behind it (mockApi can list and read trees, not make one),
-           so the button is drawn doing exactly what it does — nothing —
-           and says so, rather than sitting there looking ready to work. -->
       <div class="head__actions">
         <button
+          v-if="!creating"
           type="button"
           class="head__action"
-          disabled
-          aria-describedby="add-family-note"
+          @click="openForm"
         >
           <svg
             viewBox="0 0 24 24"
@@ -81,12 +267,174 @@ function initial(name: string): string {
           </svg>
           Add a family
         </button>
-        <span
-          id="add-family-note"
-          class="head__note"
-        >Not in M1 yet</span>
       </div>
     </header>
+
+    <!-- FR-2.1 — create a tree. Opened in place: three fields, and the
+         owner is whoever the cookie says is asking (the API reads it from
+         the session, so there is no "owned by" field to fill in). -->
+    <form
+      v-if="creating"
+      class="create"
+      novalidate
+      @submit.prevent="onCreate"
+    >
+      <h2 class="create__title">
+        Add a family
+      </h2>
+
+      <label for="tree-name">Family or tree name</label>
+      <input
+        id="tree-name"
+        v-model="name"
+        type="text"
+        name="name"
+        minlength="2"
+        maxlength="120"
+        required
+        autofocus
+      />
+
+      <label for="tree-description">Description <span class="create__optional">(optional)</span></label>
+      <textarea
+        id="tree-description"
+        v-model="description"
+        name="description"
+        rows="2"
+        maxlength="2000"
+      />
+
+      <p
+        v-if="createError"
+        class="create__error"
+        role="alert"
+      >
+        {{ createError }}
+      </p>
+
+      <div class="create__actions">
+        <button
+          type="submit"
+          :disabled="saving"
+        >
+          {{ saving ? 'Creating…' : 'Create tree' }}
+        </button>
+        <button
+          type="button"
+          class="create__cancel"
+          :disabled="saving"
+          @click="closeForm"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+
+    <!-- FR-3.2 — what is waiting for me. Rendered before the tree list,
+         because an invitation to a family you are not yet in is not
+         discoverable from that list (FR-3.5 keeps the tree out of it). -->
+    <section
+      v-if="inbox.invitations.data.length > 0"
+      class="banner"
+      aria-labelledby="invitations-title"
+    >
+      <h2
+        id="invitations-title"
+        class="banner__title"
+      >
+        Waiting for your answer
+      </h2>
+
+      <ul class="banner__list">
+        <li
+          v-for="invitation in inbox.invitations.data"
+          :key="invitation.membershipId"
+          class="banner__item"
+        >
+          <span class="banner__text">
+            <strong>{{ invitation.treeName }}</strong> invited you as
+            {{ invitation.role.toLowerCase() }} — sent by
+            {{ invitation.invitedBy }}, expires {{ dayOf(invitation.expiresAt) }}.
+          </span>
+
+          <span class="banner__actions">
+            <button
+              type="button"
+              class="banner__button banner__button--go"
+              :disabled="acting"
+              @click="answerInvitation(invitation, true)"
+            >
+              Accept
+            </button>
+            <button
+              type="button"
+              class="banner__button banner__button--quiet"
+              :disabled="acting"
+              @click="answerInvitation(invitation, false)"
+            >
+              Decline
+            </button>
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- FR-9.1 — a nomination to take a tree over, which only the nominee
+         sees: `GET /successorships` is answered per session. -->
+    <section
+      v-if="inbox.nominations.data.length > 0"
+      class="banner"
+      aria-labelledby="nominations-title"
+    >
+      <h2
+        id="nominations-title"
+        class="banner__title"
+      >
+        You have been named a successor
+      </h2>
+
+      <ul class="banner__list">
+        <li
+          v-for="nomination in inbox.nominations.data"
+          :key="nomination.treeId"
+          class="banner__item"
+        >
+          <span class="banner__text">
+            <strong>{{ nomination.treeName }}</strong> —
+            {{ nomination.ownerName }} nominated you to take the tree over on
+            {{ dayOf(nomination.nominatedAt) }}. Ownership moves only when you
+            accept.
+          </span>
+
+          <span class="banner__actions">
+            <button
+              type="button"
+              class="banner__button banner__button--go"
+              :disabled="acting"
+              @click="answerNomination(nomination, true)"
+            >
+              Accept ownership
+            </button>
+            <button
+              type="button"
+              class="banner__button banner__button--quiet"
+              :disabled="acting"
+              @click="answerNomination(nomination, false)"
+            >
+              Decline
+            </button>
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <p
+      v-if="bannerError"
+      class="banner__error"
+      role="alert"
+    >
+      {{ bannerError }}
+    </p>
 
     <AsyncState
       :state="store.trees"
@@ -95,8 +443,10 @@ function initial(name: string): string {
     >
       <template #empty>
         <p>
-          You do not belong to a tree yet. Ask an owner to invite you, or
-          create one.
+          You have no trees yet — and nobody has invited you to theirs.
+          Use <strong>Add a family</strong> above to start one: you will
+          become its owner and can invite the rest of the family from
+          there.
         </p>
       </template>
 
@@ -218,13 +568,145 @@ function initial(name: string): string {
   color: var(--surface);
   font-size: 0.9rem;
   font-weight: 600;
-  cursor: not-allowed;
+  cursor: pointer;
 }
 
-.head__note {
-  font-size: 0.75rem;
-  font-style: italic;
+/* ---- create a tree: three fields, opened in place ---- */
+
+.create {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 34rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.1rem 1.1rem;
+  border: var(--hairline) solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.create__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.create label {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.create__optional {
   color: var(--text-muted);
+  font-weight: 400;
+}
+
+.create input,
+.create textarea {
+  padding: 0.45rem 0.5rem;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-control);
+  font: inherit;
+  resize: vertical;
+}
+
+.create__error {
+  margin: 0.6rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border: var(--hairline) solid var(--border);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--radius-card);
+  font-size: 0.88rem;
+}
+
+.create__actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.create__cancel {
+  background: var(--surface);
+  border: var(--hairline) solid var(--border);
+}
+
+/* ---- the two M4 banners: something is waiting for you ---- */
+
+.banner {
+  margin-bottom: 1.1rem;
+  padding: 0.85rem 1rem 0.95rem;
+  border: var(--hairline) solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.banner__title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.banner__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.banner__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.banner__text {
+  flex: 1 1 18rem;
+  min-width: 0;
+  font-size: 0.92rem;
+}
+
+.banner__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.banner__button {
+  font: inherit;
+  font-size: 0.88rem;
+  min-height: var(--control-height);
+  padding: 0 0.9rem;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.banner__button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.banner__button--go {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+.banner__button--quiet {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.banner__error {
+  margin: -0.5rem 0 1.1rem;
+  padding: 0.5rem 0.75rem;
+  border: var(--hairline) solid var(--border);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  font-size: 0.88rem;
 }
 
 /* ---- three counts, the tree view's own cards ---- */

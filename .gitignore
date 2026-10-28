@@ -16,5 +16,15 @@ coverage/
 *.log
 npm-debug.log*
 
+# Playwright output from e2e/
+test-results/
+playwright-report/
+
+# Bundles produced by web's scripts/check-modules.mjs
+.checks/
+
 # Uploaded photographs and other user files
 uploads/
+
+# TLS certificates — generated on first start, or dropped in by hand
+certs/

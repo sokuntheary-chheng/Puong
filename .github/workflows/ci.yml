@@ -1,0 +1,270 @@
+# Everything the repository promises, on every push and every pull request.
+#
+# Four jobs, because they answer four different questions:
+#
+#   api            does the backend lint, typecheck, build and pass its own
+#                  Jest suites (unit + e2e) against a real PostgreSQL?
+#   api-contract   does the built server, started the way production starts
+#                  it, answer every row of docs/api.md with the documented
+#                  status code?
+#   web            does the frontend lint, typecheck, build, and does
+#                  `npm run check` still find the domain rules it guards?
+#   stack          does `docker compose up` actually produce a working
+#                  application — images build, nginx serves the SPA, the API
+#                  answers through the proxy, and the browser stories pass
+#                  against that container rather than against dev servers?
+#
+# There is deliberately no deployment job: this project is submitted as a
+# tag, and pushing a tag is the submission. What CI guarantees is that a
+# commit is worth pushing.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# A second push to the same branch cancels the run it made obsolete.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The same values docker-compose.yml defaults to, so a job that talks to
+  # the service container is configured exactly like a local `docker compose
+  # up`. No secret lives here: these are the committed dev credentials from
+  # api/.env.example, used by an ephemeral database that dies with the job.
+  DATABASE_URL: postgresql://puong:puong_dev_password@127.0.0.1:5432/puong?schema=public
+
+jobs:
+  api:
+    name: api · lint, typecheck, unit tests, build, e2e
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: puong
+          POSTGRES_PASSWORD: puong_dev_password
+          POSTGRES_DB: puong
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U puong -d puong"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install
+        working-directory: api
+        run: npm ci
+
+      - name: Generate the Prisma client
+        working-directory: api
+        run: npx prisma generate
+
+      # `npm run lint` writes (eslint --fix), which is what a developer wants
+      # and not what a check should do: a fixable error would make CI green
+      # while the repository still contains it. Report, do not repair — and
+      # aim it at the source globs the lint script names, because `eslint .`
+      # also walks `dist/` and `uploads/` and type-aware linting of a build
+      # output is measured in minutes, not seconds.
+      - name: Lint
+        working-directory: api
+        run: npx eslint "{src,apps,libs,test,prisma}/**/*.ts"
+
+      - name: Typecheck
+        working-directory: api
+        run: npm run typecheck
+
+      - name: Build
+        working-directory: api
+        run: npm run build
+
+      # The schema has to exist before either suite can touch it: the Jest
+      # e2e suite boots the real server against the real database, and
+      # `pretest:e2e` seeds it.
+      - name: Migrate
+        working-directory: api
+        run: npx prisma migrate deploy
+
+      - name: Unit tests
+        working-directory: api
+        run: npm test
+
+      - name: E2E tests (Jest, against the service database)
+        working-directory: api
+        run: npm run test:e2e
+
+  api-contract:
+    name: api · contract check against the built server
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: puong
+          POSTGRES_PASSWORD: puong_dev_password
+          POSTGRES_DB: puong
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U puong -d puong"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install
+        working-directory: api
+        run: npm ci
+
+      - name: Generate the Prisma client and build
+        working-directory: api
+        run: npx prisma generate && npm run build
+
+      - name: Migrate and seed
+        working-directory: api
+        run: npx prisma migrate deploy && npm run seed
+
+      # Started from `dist` — the same file `start:prod` runs and the same
+      # image entrypoint runs — rather than from `nest start`, so the check
+      # cannot pass on a development-only behaviour the build would strip.
+      - name: Start the server
+        working-directory: api
+        env:
+          PORT: 3000
+          CORS_ORIGIN: http://localhost:3000
+          JWT_SECRET: ci-only-not-a-secret
+          COOKIE_SECURE: 'false'
+          # The API is reached directly here, with no proxy in front of it,
+          # so X-Forwarded-For must not be believed (see api/.env.example).
+          TRUST_PROXY: 'false'
+          UPLOAD_DIR: uploads
+        run: nohup node dist/src/main.js > /tmp/api.log 2>&1 &
+
+      - name: Wait for the API
+        run: |
+          curl --silent --fail --retry 15 --retry-delay 2 --retry-all-errors \
+            http://localhost:3000/api/docs/json > /dev/null
+
+      - name: Contract check (docs/api.md)
+        working-directory: api
+        run: npm run check
+
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/api.log
+
+  web:
+    name: web · lint, typecheck, check, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        working-directory: web
+        run: npm ci
+
+      - name: Lint
+        working-directory: web
+        run: npx eslint .
+
+      - name: Typecheck
+        working-directory: web
+        run: npm run typecheck
+
+      # `check` is the project's own guard: check:seed compares the API's
+      # seed against web/src/mock/db.json, check:modules runs the domain
+      # rules' assertions. Both predate Jest and both still run on every push.
+      - name: Domain checks
+        working-directory: web
+        run: npm run check
+
+      - name: Build
+        working-directory: web
+        run: npm run build
+
+  stack:
+    name: stack · docker compose up, then the browser stories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Both compose files parse
+        run: |
+          docker compose config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.tls.yml config --quiet
+
+      - name: Build the images and start the stack
+        run: docker compose up -d --build
+
+      - name: Wait for the stack
+        run: |
+          curl --silent --fail --retry 20 --retry-delay 3 --retry-all-errors \
+            http://localhost:8080/api/docs/json > /dev/null
+
+      # The demo family, loaded through the same task a person would run.
+      # The API container migrates on start, so the schema is there already.
+      - name: Seed
+        run: docker compose run --rm seed
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            api/package-lock.json
+            e2e/package-lock.json
+
+      # `pretest` re-seeds before the stories, and it runs Prisma from api/ —
+      # against the *container's* database, which is why DATABASE_URL names
+      # the published port rather than the compose-internal hostname.
+      - name: Install (api for the seed hook, e2e for Playwright)
+        run: npm ci --prefix api && npm ci --prefix e2e
+
+      - name: Install Chromium
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser stories against the container
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: http://localhost:8080
+          E2E_API_URL: http://localhost:3000
+        run: npm test
+
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose logs --tail 200
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: |
+            e2e/test-results
+            e2e/playwright-report
+          if-no-files-found: ignore

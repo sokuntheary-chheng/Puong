@@ -97,6 +97,24 @@ Five things in the first draft of this proposal are not in the MVP.
 
 ---
 
+## M4 additions
+
+Three stories were written during M4, after the nine MVP stories had been walked end to end. None of them is a new feature: each names a gap the walkthrough exposed — a screen that hid the thing it was supposed to show, a form and a server that disagreed about the same field, and a fact the application knew but never told anybody.
+
+11. **As a member, I want everything that is waiting for my answer on the first screen I see, so that I never have to go looking for it.**
+    Accepted when: the home page shows one banner per pending invitation and one per pending nomination, each with the actions that answer it; a member with exactly one tree is **not** carried past the home page while something is pending — the shortcut into the single tree is skipped exactly then; answering a banner removes it without a reload; and signing in as a different account shows that account's list and nobody else's.
+    *Built as* `stores/inbox.ts` + the `homeEntry` route guard + the two `HomeView` banners. *Proved by* e2e stories 2 and 10 in `e2e/tests/stories.spec.ts`, screenshots `story-02-invitation-on-home.png` and `story-10-nomination-banner.png`.
+
+12. **As a contributor, I want the browser to refuse a bad record with the same sentence the API would use, so that I am told the truth once and in the same words.**
+    Accepted when: submitting the add-person form empty shows `A full name is required.` before any request is sent — the exact string the API returns; a death date before a birth date is refused in both places with the same wording; a refused submission never leaves a half-filled panel or a partially written record; and the client-side rules live in one module that the form calls, not in the template.
+    *Built as* `web/src/utils/personValidation.ts`, used by `PersonForm.vue` and mirrored in the API's DTO. *Proved by* `npm run check` in `web/` and e2e story 4 (`story-04-name-required.png`), which asserts the sentence the API would have sent.
+
+13. **As an owner, I want the tree to say who it passed to and when, so that a transfer is still a fact after everybody has moved on.**
+    Accepted when: after an ownership transfer the tree's settings show `Ownership moved from <previous owner> to <current owner> on <date>`; the note is drawn for whoever can open the settings, not only for the new owner, because "who owns this now, and since when" is the question the feature exists to answer; and the date comes from the row written by the transfer itself rather than from anything the browser supplies.
+    *Built as* the `ownershipTransferredAt` / `previousOwnerId` pair written in `TreesService.acceptSuccessor` and rendered by `TreeSettings.vue`. *Proved by* `trees.service.spec`, `api/scripts/check-api.cjs`, and e2e story 10 (`story-10-ownership-transferred.png`).
+
+---
+
 ## Entities
 
 Four domain entities (`Tree`, `Person`, `Relation`, `Memory`), one authentication entity (`User`) and one join entity (`Membership`) that carries the per-tree role.
