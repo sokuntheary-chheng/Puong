@@ -20,7 +20,7 @@ Status of the milestones so far:
 | M2 Backend API | 7 | complete | `m2` → `4955663` |
 | M3 Integrated app | 9 | complete | `m3` → `51a742e` |
 | M4 Feature complete | 12 | complete | `m4` → `1d34df1` |
-| M5 Deployed | 14 | complete | `m5` |
+| M5 Deployed | 14 | complete | `m5` → `463fe83` |
 
 All the tags are annotated. `m0`–`m3` are on the origin; `m4` and `m5` are
 local until they are pushed (`git push origin m4 m5` — tags do not travel with
