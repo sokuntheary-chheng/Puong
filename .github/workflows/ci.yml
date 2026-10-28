@@ -20,6 +20,13 @@
 
 name: CI
 
+# Least privilege — and what CodeQL's `actions` pack asks for. Every job here
+# builds and tests; none creates a release, pushes a commit or reads a
+# package. The token they are given by default has full control of the
+# repository, which is a large blast radius for a build script.
+permissions:
+  contents: read
+
 on:
   push:
   pull_request:

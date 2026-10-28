@@ -1,0 +1,26 @@
+# This file *replaces* the "Deploy Next.js site to Pages" template that
+# GitHub put on `main` when the repository was created.
+#
+# This project is not a Next.js site and is not deployed to GitHub Pages:
+# it is a Vue SPA served by nginx from a Docker image, deployed by
+# `docker compose up` (see README.md, "Run it locally"). Left as it was,
+# this workflow would have run on the first push to `main` after M5 was
+# merged, failed to find a Next.js build, and — worse — been mistaken for
+# the deployment this project does not have.
+#
+# Kept on workflow_dispatch so the file's history stays honest rather than
+# looking deleted by accident.
+
+name: Deploy Next.js site to Pages
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  superseded:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Nothing to deploy here — Puong is deployed with docker compose, not to Pages"

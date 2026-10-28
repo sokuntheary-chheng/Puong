@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync } from 'node:fs';
 import { unlink } from 'node:fs/promises';
-import { resolve, sep } from 'node:path';
+import { resolve, sep, basename } from 'node:path';
 import type { Express } from 'express';
 
 /**
@@ -89,16 +89,26 @@ export class UploadsService {
 
   /**
    * Resolves a requested filename to a file inside the upload directory,
-   * or throws 404. The containment check is redundant *after* the pattern
-   * above (a hex name cannot contain a separator) and is kept anyway: it is
-   * one comparison, and it is the difference between "impossible today" and
-   * "impossible because of a regex someone might loosen".
+   * or throws 404.
+   *
+   * Two independent rules, and the first one is structural rather than a
+   * pattern someone might loosen:
+   *
+   * - **`basename` first.** Whatever arrived in the URL is reduced to its
+   *   last segment before it can name anything, so `..`, a separator and an
+   *   absolute path have nowhere to go — the value handed to `resolve` is
+   *   the caller's only in the sense that it chose a leaf name.
+   * - **Then the shape is checked**, and then the containment check below
+   *   (kept although a hex name cannot escape, because it is one comparison
+   *   and the difference between "impossible today" and "impossible because
+   *   of a regex someone might loosen"), and then existence.
    */
   pathFor(filename: string): string {
-    if (!UploadsService.namePattern.test(filename)) {
+    const name = basename(filename);
+    if (!UploadsService.namePattern.test(name)) {
       throw new NotFoundException('That photograph does not exist.');
     }
-    const path = resolve(this.directory, filename);
+    const path = resolve(this.directory, name);
     if (!path.startsWith(this.directory + sep)) {
       throw new NotFoundException('That photograph does not exist.');
     }

@@ -180,7 +180,17 @@ async function main() {
       unknownUser.status === 401 &&
       JSON.stringify(wrongPassword.body.message) === JSON.stringify(unknownUser.body.message) &&
       isErrorBody(wrongPassword, 401),
-    { wrongPassword, unknownUser },
+    /* Status codes and the two server-written messages, and nothing else.
+       The whole responses would carry the credentials that produced them
+       into this script's failure report — which is printed, and CodeQL is
+       right that a report is a log. The assertion is about the messages,
+       so the messages are the detail worth keeping. */
+    {
+      wrongPasswordStatus: wrongPassword.status,
+      unknownUserStatus: unknownUser.status,
+      wrongPasswordMessage: wrongPassword.body.message,
+      unknownUserMessage: unknownUser.body.message,
+    },
   );
 
   r = await call('POST', '/api/auth/logout', undefined, { cookie: registeredCookie });
