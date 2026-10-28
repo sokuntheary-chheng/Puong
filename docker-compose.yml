@@ -33,7 +33,13 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-puong_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-puong}
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      # Loopback only. This port exists so the API running *on the host*
+      # can reach PostgreSQL during development, and nothing else needs it:
+      # the web tier talks to the database over the compose network. On
+      # every interface it would offer the database — with whatever
+      # password .env holds — to the network on a machine whose only
+      # intended entrance is nginx.
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
     volumes:
       - puong-db:/var/lib/postgresql/data
     healthcheck:
@@ -71,7 +77,11 @@ services:
       # photographs with it.
       UPLOAD_DIR: ${UPLOAD_DIR:-uploads}
     ports:
-      - '${API_PORT:-3000}:3000'
+      # Also loopback: published for the dev workflow (a seed or a contract
+      # check running on the host), not as a second way into the API. Every
+      # browser request goes through nginx, which is the entrance that
+      # carries the security headers and the single origin.
+      - '127.0.0.1:${API_PORT:-3000}:3000'
     volumes:
       - puong-uploads:/app/uploads
 

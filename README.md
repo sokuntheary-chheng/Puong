@@ -97,9 +97,9 @@ Every variable has a working default; the table is what you would change.
 |---|---|---|
 | `DATABASE_URL` | PostgreSQL connection string for the API | `postgresql://puong:puong_dev_password@127.0.0.1:5432/puong?schema=public` |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Credentials of the `db` service (and of the URL above inside the stack) | `puong` / `puong_dev_password` / `puong` |
-| `POSTGRES_PORT` | Host port PostgreSQL is published on | `5432` |
+| `POSTGRES_PORT` | Host port PostgreSQL is published on — bound to `127.0.0.1`, so only the host can reach it | `5432` |
 | `PORT` | Port the API listens on | `3000` |
-| `API_PORT` | Host port the API is published on | `3000` |
+| `API_PORT` | Host port the API is published on — also `127.0.0.1` only; browsers go through nginx | `3000` |
 | `CORS_ORIGIN` | Origin allowed to call the API directly (through nginx it is same-origin) | `http://localhost:8080` |
 | `JWT_SECRET` | Signs the session cookie — **change it** before this leaves your machine | `replace-me-before-this-leaves-your-machine` |
 | `COOKIE_SECURE` | `Secure` attribute on the session cookie; true only behind TLS | `false` |
