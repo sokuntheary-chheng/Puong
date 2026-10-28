@@ -45,6 +45,14 @@ const TREE = '/trees/t1';
 const PERSON = 'M4 Demo Person';
 const EDITED_PERSON = 'M4 Demo Person (edited)';
 
+/**
+ * Where the API answers *directly*. The Swagger check asks for the API's own
+ * documents rather than a page, so against a containerised stack it has to
+ * be `E2E_API_URL` (e.g. http://localhost:55300) instead of the dev server's
+ * :3000 — the browser stories above never need it, they go through the page.
+ */
+const API = process.env.E2E_API_URL ?? 'http://localhost:3000';
+
 /** A 1×1 PNG, so FR-6.2's format rule is met without shipping a fixture. */
 const PNG_1PX = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
@@ -456,10 +464,10 @@ test('story 10 — nominate a successor, accept, and the ownership moves (FR-9.1
 /* ------------------------------------------------------------------ */
 
 test('Swagger UI and the OpenAPI document are served by the API', async ({ request }) => {
-  const ui = await request.get('http://localhost:3000/api/docs/');
+  const ui = await request.get(`${API}/api/docs/`);
   expect(ui.ok()).toBe(true);
 
-  const spec = await request.get('http://localhost:3000/api/docs/json');
+  const spec = await request.get(`${API}/api/docs/json`);
   expect(spec.ok()).toBe(true);
   const document = await spec.json();
   expect(Object.keys(document.paths).length).toBeGreaterThan(20);

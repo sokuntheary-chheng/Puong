@@ -16,6 +16,11 @@ import { defineConfig, devices } from '@playwright/test';
  * `docker compose up`'s job, and a test that silently starts a second API
  * on top of a running one is a test that sometimes talks to the wrong
  * database.
+ *
+ * `E2E_BASE_URL` points the same stories at any other running stack — the
+ * containerised one (`http://localhost:8080`) being the case M5 cares about:
+ * what is tested then is the nginx build, the proxy and the API image, not
+ * the dev servers.
  */
 export default defineConfig({
   testDir: './tests',
@@ -29,7 +34,7 @@ export default defineConfig({
   reporter: [['list']],
   outputDir: 'test-results',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5173',
     locale: 'en-GB',
     timezoneId: 'Asia/Phnom_Penh',
     trace: 'retain-on-failure',
