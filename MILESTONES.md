@@ -20,12 +20,13 @@ Status of the milestones so far:
 | M2 Backend API | 7 | complete | `m2` → `4955663` |
 | M3 Integrated app | 9 | complete | `m3` → `51a742e` |
 | M4 Feature complete | 12 | complete | `m4` → `1d34df1` |
-| M5 Deployed | 14 | not started | `m5` |
+| M5 Deployed | 14 | complete | `m5` |
 
-All five existing tags are annotated and **local only** — nothing has been
-pushed (`git tag -l` to list them, `git rev-parse 'm4^{commit}'` to resolve
-one). The working branch is `m3-work`, so the ref `m3` names the tag alone
-and `git show m3` needs no disambiguating.
+All the tags are annotated. `m0`–`m3` are on the origin; `m4` and `m5` are
+local until they are pushed (`git push origin m4 m5` — tags do not travel with
+a plain `git push`). `git tag -l` lists them, `git rev-parse 'm4^{commit}'`
+resolves one to a commit. The working branch is `m3-work`, so the ref `m3`
+names the tag alone and `git show m3` needs no disambiguating.
 
 ---
 
@@ -346,9 +347,126 @@ feature it shows, ending on Swagger and the three test gates.
 
 ## M5 Deployed (week 14)
 
-- [ ] Dockerfiles for frontend and backend; `docker-compose.yml` for the whole stack
-- [ ] Running on the school server with HTTPS, or starting locally with one `docker compose up`
-- [ ] GitHub Actions workflow runs lint, tests and build on every push
-- [ ] README complete (Appendix B); no secrets in the repository
+- [x] Dockerfiles for frontend and backend; `docker-compose.yml` for the whole stack
+- [x] Running on the school server with HTTPS, or starting locally with one `docker compose up`
+- [x] GitHub Actions workflow runs lint, tests and build on every push
+- [x] README complete (Appendix B); no secrets in the repository
+
+**Evidence — the stack.** `api/Dockerfile` is two stages: `npm ci` + `prisma
+generate` + `nest build`, then a runtime with production dependencies, the
+Prisma CLI (for `migrate deploy`), `tsx` (for the seed) and `openssl` — the
+binary Prisma shells out to detect which libssl to load, and without it the
+container guessed `openssl-1.1.x` on a Debian 12 image that ships 3.0. The
+warning is gone from the logs. `web/Dockerfile` builds the SPA with Vite and
+serves it from `nginx:1.27-alpine`, with `openssl` added for the certificate
+script. `docker-compose.yml` runs db → api → web with a separate, opt-in
+`seed` task, and named volumes for the database and the uploads.
+
+**Evidence — one command.** Verified here while the dev API (:3000) and Vite
+(:5173) were still running, on host ports 8080 / 55300 / 55432:
+
+```bash
+POSTGRES_PORT=55432 API_PORT=55300 docker compose up -d --build
+POSTGRES_PORT=55432 API_PORT=55300 docker compose run --rm seed
+```
+
+`GET /` → 200, the deep link `/trees/t1` → 200, `/api/docs` → 200 **through
+the nginx proxy**, `POST /api/auth/login` → 200, and the seed loads the demo
+family: 3 users · 2 trees · 5 memberships · 23 people · 36 relations ·
+6 memories.
+
+**Evidence — HTTPS.** An overlay rather than a second stack:
+`docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d` →
+<https://localhost:8443>. Checked: `/`, `/trees/t1` and `/api/docs` → 200 over
+TLS; `http://localhost:8080/trees/t1` → `301 https://localhost:8443/trees/t1`;
+the login response carries `puong_session=…; HttpOnly; **Secure**;
+SameSite=Strict`. The certificate in `./certs/` (gitignored) is generated on
+first start by `web/docker-entrypoint.d/40-self-signed-cert.sh` and carries
+`CN=localhost` + `DNS:localhost, IP:127.0.0.1`; drop a real
+`tls.crt` / `tls.key` in the same directory and the script leaves them alone.
+Both server blocks include one shared `web/app.conf`, so the CSP, the headers
+and the proxy exist in exactly one place.
+
+**Evidence — CI.** `.github/workflows/ci.yml`, on every push and PR: `api`
+(lint without `--fix`, typecheck, build, migrate, **54** unit tests, **61**
+e2e tests against a PostgreSQL service container), `api-contract` (builds,
+starts `dist/src/main.js` — the file `start:prod` and the image run — and
+checks **259** assertions of `docs/api.md` against the live server), `web`
+(lint, typecheck, **36** domain checks, build), `stack` (`compose config` for
+both files, `docker compose up -d --build`, seed, then the browser suite
+against the container). Neither job needs a secret: the credentials are the
+committed dev values for a database that dies with the run.
+
+**Evidence — the stories, against the containers.** `E2E_BASE_URL=http://localhost:8080
+E2E_API_URL=http://localhost:55300 npm test` in `e2e/` → **10 passed, 1
+skipped** (story 8) through the *built* nginx, the *built* API and the
+container database. That run rewrote the 28 PNGs; they were restored with
+`git checkout -- docs/screenshots`, so `docs/screenshots/` still holds exactly
+the M4 evidence `docs/stories-m4.md` points at.
+
+**Evidence — README and secrets.** `README.md` follows Appendix B section by
+section (Screenshots, Architecture, Run it locally, Environment variables,
+Test accounts, API documentation, Tests) and adds the HTTPS path, the CI job
+list and a repository map. `.env.example` is the committed copy of every
+variable; `.env` and `certs/` are gitignored. A scan of the tracked files for
+private keys, `ghp_`/`github_pat_`/`AKIA`/`sk-`/`xox` tokens finds nothing —
+the only credential in the repository is the documented demo password, which
+is in the README because Appendix B asks for it.
 
 > **Explain: What happens, step by step, between `git push` and your change being live?**
+>
+> **1. GitHub moves a ref — nothing runs yet.** `git push` uploads the commit
+> objects and fast-forwards `origin/m3-work`. A moved ref is not a
+> deployment: no server has read it.
+>
+> **2. The `push` event starts `.github/workflows/ci.yml`**, which runs four
+> jobs in parallel. `api` installs from `package-lock.json`, generates the
+> Prisma client, lints (without `--fix`, so a fixable error cannot make CI
+> green while the repository still holds it), typechecks, builds, applies the
+> migrations to a throwaway PostgreSQL service container and runs the 54 unit
+> and 61 e2e tests. `api-contract` builds the same way, seeds, starts
+> `dist/src/main.js` — the file `start:prod` and the Docker image start —
+> waits for `/api/docs/json`, and checks every row of `docs/api.md` against
+> the live server. `web` lints, typechecks, runs the 36 domain checks and
+> builds. `stack` validates both compose files, runs `docker compose up
+> -d --build` (which builds the two images: Vite → nginx, and the Prisma +
+> NestJS runtime), seeds the container and runs the Playwright stories
+> against `http://localhost:8080` — the artefact, not the dev servers.
+>
+> **3. Red means nothing became live.** There is no deploy step for a failing
+> commit: the run log and the red cross on the commit are the whole effect.
+> Nothing is built, nothing restarts, no database is touched.
+>
+> **4. For this project "live" ends at a tag.** When the run is green the
+> commit is worth submitting: `git tag -a m5 <sha> -m "M5"` and
+> `git push origin m5`. The rubric grades a tagged snapshot, not a server —
+> that is why the workflow has no auto-deploy stage, and why the code freeze
+> is expressed as a tag rather than as a branch.
+>
+> **5. On the machine that serves it, `docker compose up`.** Compose compares
+> what is running with the compose file, builds or reuses the images, starts
+> `db` and waits for its healthcheck, then starts `api`: the container applies
+> `prisma migrate deploy` (only migrations nobody has applied — existing rows
+> are not re-migrated) and listens on :3000. Then `web` starts with its nginx
+> configuration baked into the image, and the reverse proxy begins sending
+> `/api/*` to the API. In TLS mode the entrypoint runs `25-select-tls.sh`
+> (picks the https server block and substitutes the redirect port) and
+> `40-self-signed-cert.sh` (writes a certificate only if `certs/` is empty)
+> *before* nginx starts, so a real certificate always wins.
+>
+> **6. What a visitor sees.** Vite fingerprints every asset, so the new build
+> references filenames that did not exist before; the HTML points at them and
+> a refresh loads the new code. The cookie, the CSP and the proxy rules come
+> from the images, not from a person editing a file on the server.
+>
+> **7. Rollback is the same command with the old ref.** `git checkout m4`
+> (or re-point the tag), `docker compose up -d --build`, and the previous
+> images are rebuilt. The data is a named volume and migrations run forward
+> only, so a rollback that needs a schema change gets a *new* migration rather
+> than a deleted one — `down -v` throws the family away and is never part of
+> either path.
+>
+> **8. The secret never travelled.** `JWT_SECRET` and the database password
+> are read from `.env` on the machine, which git ignores; CI invents its own
+> for a database that dies with the job. What crossed the network was source
+> code and a lockfile.
