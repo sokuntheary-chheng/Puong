@@ -25,3 +25,6 @@ playwright-report/
 
 # Uploaded photographs and other user files
 uploads/
+
+# TLS certificates — generated on first start, or dropped in by hand
+certs/

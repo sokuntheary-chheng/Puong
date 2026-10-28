@@ -22,3 +22,8 @@ wind
 !README.md
 **/*.log
 web/.checks
+
+# TLS material and the compose files that reference it: never in an image.
+certs
+**/certs
+docker-compose*.yml

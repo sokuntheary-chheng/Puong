@@ -19,6 +19,17 @@ RUN npx prisma generate && npm run build
 # --- runtime ---------------------------------------------------------------
 FROM node:20-bookworm-slim
 
+# `openssl` is not in bookworm-slim, and Prisma detects which libssl to load
+# by running `openssl version`. Without the binary it prints
+#   prisma:warn Prisma failed to detect the libssl/openssl version to use
+# and falls back to openssl-1.1.x on a Debian 12 image that ships 3.0 — which
+# is a warning today and a query that will not load the driver tomorrow.
+# `ca-certificates` comes with it because the migration and seed are the only
+# things in this image that ever talk to anything but the database.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY api/package*.json ./
