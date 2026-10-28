@@ -19,11 +19,11 @@ Status of the milestones so far:
 | M1 Frontend prototype | 5 | complete | `m1` → `1bd5a7f` |
 | M2 Backend API | 7 | complete | `m2` → `4955663` |
 | M3 Integrated app | 9 | complete | `m3` → `38d1894` |
-| M4 Feature complete | 12 | not started | `m4` |
+| M4 Feature complete | 12 | complete | `m4` → `1d34df1` |
 | M5 Deployed | 14 | not started | `m5` |
 
-All four existing tags are annotated and **local only** — nothing has been
-pushed (`git tag -l` to list them, `git rev-parse 'm3^{commit}'` to resolve
+All five existing tags are annotated and **local only** — nothing has been
+pushed (`git tag -l` to list them, `git rev-parse 'm4^{commit}'` to resolve
 one). The working branch is `m3-work`, so the ref `m3` names the tag alone
 and `git show m3` needs no disambiguating.
 
