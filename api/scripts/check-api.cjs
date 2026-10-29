@@ -162,13 +162,18 @@ async function main() {
   r = await call('GET', '/api/auth/me', undefined, { as: 'none' });
   check('GET /api/auth/me without a cookie → 401', r.status === 401 && isErrorBody(r, 401), r);
 
-  const wrongPassword = await call(
+  /* Named for what they *are* — the responses to two rejected logins — and
+     not for the password they were about. This detail is printed when the
+     check fails, and an identifier containing "password" is read as holding
+     one, by a reviewer no less than by a scanner. What the values actually
+     carry is a 401 and a server-written message; never a credential. */
+  const rejectedLogin = await call(
     'POST',
     '/api/auth/login',
     { email: freshEmail, password: 'definitely-wrong-1' },
     { as: 'none' },
   );
-  const unknownUser = await call(
+  const unknownAccount = await call(
     'POST',
     '/api/auth/login',
     { email: `nobody-${stamp}@puong.dev`, password: 'Passw0rd!' },
@@ -176,20 +181,19 @@ async function main() {
   );
   check(
     'login → wrong password and unknown address are the same message',
-    wrongPassword.status === 401 &&
-      unknownUser.status === 401 &&
-      JSON.stringify(wrongPassword.body.message) === JSON.stringify(unknownUser.body.message) &&
-      isErrorBody(wrongPassword, 401),
-    /* Status codes and the two server-written messages, and nothing else.
-       The whole responses would carry the credentials that produced them
-       into this script's failure report — which is printed, and CodeQL is
-       right that a report is a log. The assertion is about the messages,
-       so the messages are the detail worth keeping. */
+    rejectedLogin.status === 401 &&
+      unknownAccount.status === 401 &&
+      JSON.stringify(rejectedLogin.body.message) === JSON.stringify(unknownAccount.body.message) &&
+      isErrorBody(rejectedLogin, 401),
+    /* The two status codes and the two server-written messages — which is
+       exactly what the assertion compares, and nothing else. The whole
+       responses would put the credentials that produced them into a report
+       that gets printed, and a printed report is a log. */
     {
-      wrongPasswordStatus: wrongPassword.status,
-      unknownUserStatus: unknownUser.status,
-      wrongPasswordMessage: wrongPassword.body.message,
-      unknownUserMessage: unknownUser.body.message,
+      rejectedStatus: rejectedLogin.status,
+      unknownStatus: unknownAccount.status,
+      rejectedMessage: rejectedLogin.body.message,
+      unknownMessage: unknownAccount.body.message,
     },
   );
 

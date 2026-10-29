@@ -80,11 +80,37 @@ export class UploadsService {
    */
   async assertSize(file: Express.Multer.File): Promise<void> {
     if (file.size <= UploadsService.maxBytes) return;
-    await unlink(file.path).catch(() => undefined);
+    await this.discard(file.filename);
     const shown = (file.size / (1024 * 1024)).toFixed(1);
     throw new BadRequestException(
       `A photograph may be at most 5 MB — this file is ${shown} MB.`,
     );
+  }
+
+  /**
+   * Removes a rejected upload.
+   *
+   * The path is resolved by `pathFor` — the one guard that decides what a
+   * path in this service may be — rather than read from `file.path`.
+   * Multer builds `file.path` itself, from the destination it was handed and
+   * the name this API generated, so the two agree in practice; but `file`
+   * *arrives* as request data, being the `@UploadedFile()` argument, and a
+   * value taken from it and handed straight to `unlink` is a deletion whose
+   * target came from outside. Resolving `file.filename` through `pathFor`
+   * states the rule once: only a generated name inside the upload directory
+   * is ever a path this service acts on — for reading *and* for deleting.
+   *
+   * Cleanup never changes the response. Whatever happens here, the caller is
+   * about to be told the file was over 5 MB, so a file that has already gone
+   * (or a name this API would not have served) is swallowed rather than
+   * turned into a 404 in place of the 400.
+   */
+  private async discard(filename: string): Promise<void> {
+    try {
+      await unlink(this.pathFor(filename));
+    } catch {
+      /* Already gone, or never ours to remove. */
+    }
   }
 
   /**

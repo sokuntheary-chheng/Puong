@@ -413,6 +413,47 @@ private keys, `ghp_`/`github_pat_`/`AKIA`/`sk-`/`xox` tokens finds nothing —
 the only credential in the repository is the documented demo password, which
 is in the README because Appendix B asks for it.
 
+**Evidence — what the first push caught, and what was done about it.** The
+first push went red in three of the four jobs, all on the same line, and the
+cause was not the workflow: the `.gitignore` line `uploads/`, meant for the
+family's photographs, also matched `api/src/uploads/` — so the module that
+serves them was never tracked. It compiled on the development machine and
+inside Docker because both build from a working copy that contains the
+files; CI builds from the repository, which could not produce a working
+build at all. Reproduced rather than guessed (`git worktree` checkout of the
+pushed commit, `npm ci`, `prisma generate`, then `tsc` → `error TS2307:
+Cannot find module './uploads/uploads.module'`), fixed with the exception
+`!api/src/uploads/`, and re-verified from a clean checkout: lint, typecheck,
+build, **54** unit tests, **61** e2e tests and the **259** contract
+assertions. Two workflows GitHub had put on `main` — a Node matrix running
+`npm ci` at a root that has no `package.json`, and a Next.js → Pages
+deployer for a project that is neither — are overridden in this branch so
+they stop reporting on every commit.
+
+**Evidence — CodeQL.** Instead of reading five alert titles and guessing,
+the CodeQL CLI was run locally against a clean checkout, with the same two
+packs the repository's advanced setup analyses (`javascript-typescript` and
+`actions`), and the *flow traces* were read rather than the titles. Four
+were `actions/missing-workflow-permissions`: the CI workflow's token had
+the repository default, which is full control, for a build script that only
+reads and tests — now `permissions: contents: read`. The fifth,
+`js/path-injection`, was not where its title suggested: the trace runs
+`@UploadedFile() file` → `assertSize(file)` → `unlink(file.path)` and never
+touches `pathFor`, so the `basename` step added earlier (kept — it is right
+for its own reason) could not have cleared it. Rejection cleanup now
+resolves through `pathFor` as well, so the only path this service hands to
+the filesystem — for reading *and* for deleting — is a generated name
+inside the upload directory, resolved and containment-checked once. A
+sixth, outside GitHub's default suite but inside the wider pack,
+`js/clear-text-logging` in the contract script, was a naming problem: the
+failure report's own keys were called `wrongPasswordStatus` and the like,
+and an identifier containing "password" is read as holding one, by a
+reviewer no less than by a scanner. The values were only ever a 401 and a
+server-written message; the keys are now named for what they are
+(`rejectedStatus`, `rejectedMessage`, …). Re-running both packs on the
+result reports nothing — `javascript-typescript` and `actions` each return
+zero, from a database built over the exact tree being tagged.
+
 > **Explain: What happens, step by step, between `git push` and your change being live?**
 >
 > **1. GitHub moves a ref — nothing runs yet.** `git push` uploads the commit
