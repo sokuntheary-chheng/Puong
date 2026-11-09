@@ -26,6 +26,7 @@ RUN apk add --no-cache openssl
 COPY web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY web/nginx.tls.conf /etc/nginx/nginx.tls.conf
 COPY web/app.conf /etc/nginx/app.conf
+COPY web/cache-map.conf /etc/nginx/cache-map.conf
 
 # Executed, in sorted order, by the image's entrypoint before nginx starts:
 # 25 picks the server block, 40 fills /etc/nginx/certs with a self-signed
