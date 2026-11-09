@@ -50,6 +50,14 @@ jobs:
   api:
     name: api · lint, typecheck, unit tests, build, e2e
     runs-on: ubuntu-latest
+    # The e2e suite boots the real server, and the real server refuses to
+    # start without a signing secret (auth.module.ts) rather than sign a
+    # session with an empty key. On a development machine `api/.env` supplies
+    # it; that file is gitignored, so CI has to supply it here — the same
+    # placeholder the contract job uses, for a database that dies with the
+    # run. DATABASE_URL is already set for every job above.
+    env:
+      JWT_SECRET: ci-only-not-a-secret
     services:
       postgres:
         image: postgres:16-alpine
@@ -253,6 +261,15 @@ jobs:
       # the published port rather than the compose-internal hostname.
       - name: Install (api for the seed hook, e2e for Playwright)
         run: npm ci --prefix api && npm ci --prefix e2e
+
+      # `npm ci` lays the client down but does not build it, and `api` has no
+      # postinstall to do it — so the seed hook above dies with
+      # "@prisma/client did not initialize yet" on a clean checkout. The api
+      # and contract jobs both generate explicitly for the same reason; this
+      # job had simply forgotten to.
+      - name: Generate the Prisma client (the seed hook needs it)
+        working-directory: api
+        run: npx prisma generate
 
       - name: Install Chromium
         working-directory: e2e
