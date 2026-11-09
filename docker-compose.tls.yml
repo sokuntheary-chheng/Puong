@@ -1,0 +1,55 @@
+# Puong over HTTPS — an *overlay*, not a second stack.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
+#
+# (or set `COMPOSE_FILE=docker-compose.yml:docker-compose.tls.yml` once and
+# keep using plain `docker compose up`). Everything the base file defines —
+# database, API, seed task, uploads volume, healthcheck — is unchanged; this
+# file only switches the web tier from "http on :8080" to "https on :8443,
+# with :80 answering 301 to the same path over https".
+#
+# Certificates
+#   Nothing to prepare: `web/docker-entrypoint.d/40-self-signed-cert.sh`
+#   generates a self-signed certificate into ./certs on first start, which
+#   is enough for localhost and for reading the stack's own logs. For a real
+#   deployment put the certificate and key at ./certs/tls.crt and
+#   ./certs/tls.key (any ACME client, or the school server's own), restart
+#   the web container, and the script leaves them alone.
+#
+# Ports
+#   8080 → 80 answers a redirect, 8443 → 443 is the site. Both read
+#   WEB_TLS_PORT, so changing one variable moves both ends together; set it
+#   to 443 on a server that owns the address.
+#
+# Cookie
+#   COOKIE_SECURE=true tells the API to stamp `Secure` on the session
+#   cookie. It has to be switched *with* TLS: a Secure cookie is never sent
+#   over plain http, so turning it on against the default stack would sign
+#   everyone out of every request.
+
+services:
+  web:
+    # `!override` replaces the base file's `ports` list instead of appending
+    # to it (the default for lists is to append, which would publish 80 twice).
+    ports: !override
+      - '${WEB_PORT:-8080}:80'        # http → 301 to https
+      - '${WEB_TLS_PORT:-8443}:443'   # the actual site
+    environment:
+      # 25-select-tls.sh swaps the https server block into place on start;
+      # without this the same image serves the plain-http stack.
+      TLS_MODE: 'true'
+      # Also the port the http server redirects *to* — it has to match the
+      # line above, which is why both read WEB_TLS_PORT.
+      WEB_TLS_PORT: ${WEB_TLS_PORT:-8443}
+    volumes:
+      # The certificate directory, on the host, so it survives `down` and a
+      # real certificate dropped here is picked up on the next restart.
+      - ./certs:/etc/nginx/certs
+
+  api:
+    environment:
+      COOKIE_SECURE: 'true'
+      # The page is now served from https://localhost:8443. nginx proxies
+      # /api as the same origin, so this only matters to a browser talking
+      # to the API from somewhere else (the Vite dev server, a curl -H).
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://localhost:8443}

@@ -1,4 +1,4 @@
-import type { Person, Relation } from '../mock/types';
+import type { Person, Relation } from '../types';
 
 /**
  * Generation placement — design.md §1, and FR-5.6.

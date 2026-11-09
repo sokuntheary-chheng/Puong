@@ -1,8 +1,15 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
-import { getMyRole, getTree, listPeople, listRelations } from '../services/mockApi';
+import {
+  createRelation,
+  deleteRelation,
+  getMyRole,
+  getTree,
+  listPeople,
+  listRelations,
+} from '../services/api';
 import { groupByGeneration } from '../services/generations';
-import type { Membership, Person, Relation, Tree } from '../mock/types';
+import type { Membership, Person, Relation, Tree } from '../types';
 import { useSessionStore } from './session';
 import { createAsync, run } from './asyncState';
 import type { AsyncState } from './asyncState';
@@ -34,7 +41,13 @@ export const useTreeStore = defineStore('openTree', () => {
       run(tree, () => getTree(treeId)),
       run(people, () => listPeople(treeId)),
       run(relations, () => listRelations(treeId)),
-      run(role, () => getMyRole(treeId, session.currentUserId)),
+      /* No session, no role to ask about — and asking the API for "the role
+         of nobody in this tree" would be a request it has no answer to. */
+      run(role, () =>
+        session.currentUserId === ''
+          ? Promise.resolve(null)
+          : getMyRole(treeId, session.currentUserId),
+      ),
     ]);
   }
 
@@ -69,11 +82,23 @@ export const useTreeStore = defineStore('openTree', () => {
    * than to the tree, so it is the one that has to be redone when the
    * identity changes. The tree, its people and its relations do not: they
    * are the same for everybody.
+   *
+   * Signing out drops the role instead of refetching it: there is no
+   * account to ask about, and a role left on screen would keep drawing
+   * controls for somebody who is no longer here.
    */
   watch(
     () => session.currentUserId,
     async () => {
       if (loadedTreeId.value === '') return;
+
+      if (session.currentUserId === '') {
+        role.data = null;
+        role.status = 'idle';
+        role.error = null;
+        return;
+      }
+
       await run(role, () => getMyRole(loadedTreeId.value, session.currentUserId));
     },
   );
@@ -157,6 +182,40 @@ export const useTreeStore = defineStore('openTree', () => {
   const siblingsOf = (id: string): Person[] => linked(id, 'SIBLING');
   const friendsOf = (id: string): Person[] => linked(id, 'FRIEND');
 
+  /**
+   * FR-8.3 — the two paths the canvas highlights.
+   *
+   * Walking `PARENT` edges only: a spouse is not an ancestor and a sibling
+   * is not a descendant, however obvious that is to a reader. The visited
+   * set is what makes the walk safe without the API's cycle check — a
+   * database a person edited by hand could still contain a loop, and an
+   * infinite loop here would freeze the page rather than return a wrong
+   * answer.
+   */
+  function ancestorsOf(personId: string): Set<string> {
+    const found = new Set<string>();
+    const queue = parentsOf(personId).map((person) => person.id);
+    while (queue.length > 0) {
+      const id = queue.shift() as string;
+      if (found.has(id)) continue;
+      found.add(id);
+      for (const parent of parentsOf(id)) queue.push(parent.id);
+    }
+    return found;
+  }
+
+  function descendantsOf(personId: string): Set<string> {
+    const found = new Set<string>();
+    const queue = childrenOf(personId).map((person) => person.id);
+    while (queue.length > 0) {
+      const id = queue.shift() as string;
+      if (found.has(id)) continue;
+      found.add(id);
+      for (const child of childrenOf(id)) queue.push(child.id);
+    }
+    return found;
+  }
+
   /** Everyone a person is linked to, grouped, for the person page. */
   function familyOf(personId: string): Array<{ label: string; people: Person[] }> {
     return [
@@ -176,6 +235,56 @@ export const useTreeStore = defineStore('openTree', () => {
     () => myRole.value === 'OWNER' || myRole.value === 'CONTRIBUTOR',
   );
 
+  /* ---------------------------------------------------------------- */
+  /* Keeping the loaded lists true after a write                      */
+  /* ---------------------------------------------------------------- */
+
+  /**
+   * Put one person into the loaded list — as a new card, or as the edited
+   * version of an existing one.
+   *
+   * The list is updated rather than refetched because a whole-tree reload
+   * after every keystroke-saved edit would redraw the canvas and throw away
+   * the selection. Everything *derived* from people (the generation
+   * columns, the family groups) is a computed over this array, so it
+   * follows on its own.
+   */
+  function putPerson(person: Person): void {
+    const known = people.data.some((row) => row.id === person.id);
+    people.data = known
+      ? people.data.map((row) => (row.id === person.id ? person : row))
+      : [...people.data, person];
+  }
+
+  /**
+   * Take one person out — FR-4.6 removes them from the tree entirely, and
+   * their relations go with them server-side, so dropping the relations
+   * here too is not an extra rule but the same one reflected.
+   */
+  function dropPerson(personId: string): void {
+    people.data = people.data.filter((row) => row.id !== personId);
+    relations.data = relations.data.filter(
+      (row) => row.fromId !== personId && row.toId !== personId,
+    );
+  }
+
+  /** FR-5.1 — write a link and show it at once. */
+  async function link(input: {
+    fromId: string;
+    toId: string;
+    type: Relation['type'];
+  }): Promise<Relation> {
+    const created = await createRelation(loadedTreeId.value, input);
+    relations.data = [...relations.data, created];
+    return created;
+  }
+
+  /** FR-5.5 — unlink, and let the generation columns recompute. */
+  async function unlink(relationId: string): Promise<void> {
+    await deleteRelation(loadedTreeId.value, relationId);
+    relations.data = relations.data.filter((row) => row.id !== relationId);
+  }
+
   return {
     tree,
     people,
@@ -193,7 +302,13 @@ export const useTreeStore = defineStore('openTree', () => {
     spousesOf,
     siblingsOf,
     friendsOf,
+    ancestorsOf,
+    descendantsOf,
     myRole,
     canWrite,
+    putPerson,
+    dropPerson,
+    link,
+    unlink,
   };
 });

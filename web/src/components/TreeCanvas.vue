@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue';
-import type { Person, Relation } from '../mock/types';
+import type { Person, Relation } from '../types';
 
 /**
  * The family-tree viewport: where the graph is drawn and moved.
@@ -31,6 +31,15 @@ const props = defineProps<{
   relations: Relation[];
   /** The person selected in the URL (`?person=…`), if any. */
   selectedId: string;
+  /**
+   * FR-8.3 — the two paths to highlight, as id sets.
+   *
+   * Passed in rather than computed here so that the walk (and its cycle
+   * guard) lives in one place, `useTreeStore().ancestorsOf /
+   * descendantsOf`, next to the rest of the family-rule code.
+   */
+  ancestorIds: string[];
+  descendantIds: string[];
 }>();
 
 const emit = defineEmits<{
@@ -104,6 +113,11 @@ const parentsByChild = computed(() => {
   }
   return index;
 });
+
+/* FR-8.3 — sets, because a card is drawn from a membership test and an
+   array scan per card would be O(n²) on a tree this size. */
+const ancestorSet = computed(() => new Set(props.ancestorIds));
+const descendantSet = computed(() => new Set(props.descendantIds));
 
 /** Everyone who has at least one relation — the "not linked yet" flag. */
 const linkedIds = computed(() => {
@@ -543,7 +557,11 @@ function initials(fullName: string): string {
             :key="node.person.id"
             type="button"
             class="card"
-            :class="{ 'card--selected': node.person.id === selectedId }"
+            :class="{
+              'card--selected': node.person.id === selectedId,
+              'card--ancestor': ancestorSet.has(node.person.id),
+              'card--descendant': descendantSet.has(node.person.id),
+            }"
             :style="{ left: `${node.x}px`, top: `${node.y}px` }"
             :aria-pressed="node.person.id === selectedId ? 'true' : 'false'"
             @click="onCardClick(node.person.id)"
@@ -561,6 +579,18 @@ function initials(fullName: string): string {
             </span>
             <span class="card__name">{{ node.person.fullName }}</span>
             <span class="card__dates">{{ lifespan(node.person) }}</span>
+            <span
+              v-if="ancestorSet.has(node.person.id)"
+              class="card__path"
+            >
+              ancestor
+            </span>
+            <span
+              v-else-if="descendantSet.has(node.person.id)"
+              class="card__path"
+            >
+              descendant
+            </span>
             <span
               v-if="!linkedIds.has(node.person.id)"
               class="card__flag"
@@ -688,6 +718,26 @@ function initials(fullName: string): string {
 .card--selected {
   border-color: var(--primary);
   background: var(--primary-soft);
+}
+
+/* FR-8.3 — the two paths out of the selected person. The tint says "this is
+   on a path"; the thick edge says *which* path: the top edge is a card
+   above the selection (an ancestor), the bottom edge one below it (a
+   descendant). Direction, not colour alone, so the two are still
+   distinguishable in greyscale. */
+.card--ancestor {
+  border-top: 3px solid var(--primary);
+}
+
+.card--descendant {
+  border-bottom: 3px solid var(--primary);
+}
+
+.card__path {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
 }
 
 .card--selected .card__avatar {

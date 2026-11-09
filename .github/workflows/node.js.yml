@@ -1,31 +1,29 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+# This file *replaces* the Node.js template that GitHub put on `main` when
+# the repository was created — it is not a new workflow.
+#
+# That template ran `npm ci` at the repository root. There is no root
+# package.json here: the project is two workspaces (api/ and web/) plus a
+# dev-only e2e/, and they are installed separately. So the template failed
+# before doing anything useful, on Node 18, 20 and 22 alike, on every push
+# and every pull request — three red checks that carried no information.
+#
+# The workflow that actually does that job is ci.yml in this directory:
+# lint, typecheck, tests and build for both workspaces, the contract check
+# against the built server, and the browser stories against the composed
+# stack. Running a second, broken copy of the same idea only teaches people
+# to ignore red checks, so this one is left on workflow_dispatch — it can be
+# started by hand, and never reports on a commit.
 
 name: Node.js CI
 
+permissions:
+  contents: read
+
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  build:
-
+  superseded:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
+      - run: echo "Nothing to build here — the CI for this repository is .github/workflows/ci.yml"

@@ -1,0 +1,16 @@
+{
+  "name": "puong-e2e",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Browser walkthrough of Puong's MVP stories — screenshots for docs/screenshots/",
+  "type": "module",
+  "scripts": {
+    "pretest": "npm --prefix ../api run seed",
+    "test": "playwright test",
+    "posttest": "npm --prefix ../api run seed",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1"
+  }
+}

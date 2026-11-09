@@ -1,0 +1,58 @@
+# Puong API — NestJS + Prisma.
+#
+# The build context is the *repository root*, not api/: the seed script reads
+# web/src/mock/db.json so the database and the prototype's mock cannot drift
+# apart, and that file has to be in the image for `npm run seed` to work.
+
+FROM node:20-bookworm-slim AS build
+
+WORKDIR /app
+
+COPY api/package*.json ./
+COPY api/prisma ./prisma
+RUN npm ci
+
+COPY api/tsconfig.json api/tsconfig.build.json api/nest-cli.json ./
+COPY api/src ./src
+RUN npx prisma generate && npm run build
+
+# --- runtime ---------------------------------------------------------------
+FROM node:20-bookworm-slim
+
+# `openssl` is not in bookworm-slim, and Prisma detects which libssl to load
+# by running `openssl version`. Without the binary it prints
+#   prisma:warn Prisma failed to detect the libssl/openssl version to use
+# and falls back to openssl-1.1.x on a Debian 12 image that ships 3.0 — which
+# is a warning today and a query that will not load the driver tomorrow.
+# `ca-certificates` comes with it because the migration and seed are the only
+# things in this image that ever talk to anything but the database.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY api/package*.json ./
+COPY api/prisma ./prisma
+# Production dependencies for the server, plus the two tools the container
+# still needs: the Prisma CLI for `migrate deploy` and `tsx` for the seed.
+# `--no-save` keeps them out of the package.json inside the image, so the
+# lockfile the image was built from stays the one that was tested.
+RUN npm ci --omit=dev && npm install --no-save prisma@6 tsx@4
+
+# Set *after* the install above: npm maps NODE_ENV=production to `omit=dev`,
+# which made `npm install --no-save tsx@4` skip tsx (it is a devDependency in
+# package.json) and broke `npx prisma db seed` with `spawn tsx ENOENT`.
+ENV NODE_ENV=production
+
+COPY --from=build /app/dist ./dist
+# The seed resolves db.json as `prisma/../../web/src/mock/db.json` — two levels
+# above prisma/, i.e. the repo root's sibling of api/. In this image api/ is
+# /app, so the repo root is /: the file has to land at /web/..., not /app/web/...
+COPY web/src/mock/db.json /web/src/mock/db.json
+
+EXPOSE 3000
+
+# Migrations on start, then the API. Migrations are idempotent; seeding is
+# not, so it is a separate command (see docker-compose.yml).
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]

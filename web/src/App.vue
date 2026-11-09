@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
-import { mockApi } from './services/mockApi';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { demo } from './services/api';
 import { useSessionStore } from './stores/session';
 
 /**
  * Application shell: a header that identifies who you are and which tree
  * you are in, and the routed screen below it.
  *
- * The footer holds M1 scaffolding — an account switcher and a way to make
- * the next request fail. Both exist so that the permission matrix and the
- * error state can be demonstrated rather than described, and both go away
- * at M3 when there is a real session to sign in with.
+ * The M1 scaffolding is gone — the account switcher was a stand-in for a
+ * session, and there is a session now. What is left in the footer is one
+ * control the M1 checklist still wants a use for: making a request fail so
+ * the error state can be seen on demand. It stops the next call in the
+ * browser and says so, rather than pretending the server broke.
  */
 const session = useSessionStore();
 const route = useRoute();
+const router = useRouter();
 
 /**
  * The tree the screen below is inside, if any.
@@ -36,9 +38,43 @@ function initialsOf(name: string): string {
   return `${first}${last}`.toUpperCase();
 }
 
+/**
+ * The session is normally resolved by the router guard before anything
+ * renders; asking again here is free (the call is memoised) and covers the
+ * case of a hard reload that somehow reaches a view first.
+ */
 onMounted(() => {
-  void session.fetchUsers();
+  void session.restore();
 });
+
+/**
+ * The session can end while a screen is open — an expired cookie, a logout
+ * in another tab, a `401` from any request. The guard only runs on
+ * navigation, so without this the header would keep naming somebody the
+ * server no longer recognises and the screen would keep offering their
+ * controls.
+ *
+ * `false → true` is not watched: arriving signed out is the normal start of
+ * a visit, and bouncing that through `/login` would be the guard's job done
+ * twice.
+ */
+watch(
+  () => session.isSignedIn,
+  (signedIn) => {
+    if (signedIn) return;
+    if (route.meta.public === true) return;
+    void router.push({ name: 'login', query: { next: route.fullPath } });
+  },
+);
+
+async function onLogout(): Promise<void> {
+  await session.logout();
+  /* The watcher above sends us onward; there is no point asking for a page
+     the next account may not be allowed to see. */
+  if (route.name !== 'login') {
+    await router.push({ name: 'login' });
+  }
+}
 
 const failEndpoint = ref('people.list');
 const armed = ref(false);
@@ -51,13 +87,8 @@ const failureTargets = [
 ];
 
 function armFailure(): void {
-  mockApi.failNext(failEndpoint.value);
+  demo.failNext(failEndpoint.value);
   armed.value = true;
-}
-
-function resetSeed(): void {
-  mockApi.reset();
-  armed.value = false;
 }
 </script>
 
@@ -118,9 +149,20 @@ function resetSeed(): void {
         <RouterLink to="/">
           My trees
         </RouterLink>
-        <RouterLink to="/login">
+        <RouterLink
+          v-if="!session.isSignedIn"
+          to="/login"
+        >
           Log in
         </RouterLink>
+        <button
+          v-else
+          type="button"
+          class="shell__out"
+          @click="onLogout"
+        >
+          Log out
+        </button>
         <RouterLink
           v-if="treeId !== ''"
           class="shell__icon"
@@ -149,9 +191,17 @@ function resetSeed(): void {
         <span
           class="shell__who"
           role="img"
-          :aria-label="`Signed in as ${session.currentDisplayName}`"
-          :title="session.currentDisplayName"
-        >{{ initialsOf(session.currentDisplayName) }}</span>
+          :aria-label="
+            session.isSignedIn
+              ? `Signed in as ${session.currentDisplayName}`
+              : 'Not signed in'
+          "
+          :title="
+            session.isSignedIn
+              ? session.currentDisplayName
+              : 'Not signed in — log in to open a tree'
+          "
+        >{{ session.isSignedIn ? initialsOf(session.currentDisplayName) : '?' }}</span>
       </nav>
     </header>
 
@@ -161,30 +211,12 @@ function resetSeed(): void {
 
     <footer class="shell__foot">
       <details>
-        <summary>M1 demo controls</summary>
+        <summary>Demo controls</summary>
 
         <div class="controls">
           <fieldset>
-            <legend>Signed in as</legend>
-            <label
-              v-for="user in session.users.data"
-              :key="user.id"
-              class="choice"
-            >
-              <input
-                type="radio"
-                name="demo-user"
-                :value="user.id"
-                :checked="session.currentUserId === user.id"
-                @change="session.switchTo(user.id)"
-              />
-              <span>{{ user.displayName }} <small>{{ user.email }}</small></span>
-            </label>
-          </fieldset>
-
-          <fieldset>
             <legend>Failure state</legend>
-            <label for="fail-target">Make the next request fail</label>
+            <label for="fail-target">Stop the next request in the browser</label>
             <select
               id="fail-target"
               v-model="failEndpoint"
@@ -203,19 +235,24 @@ function resetSeed(): void {
             >
               Arm
             </button>
-            <button
-              type="button"
-              class="controls__secondary"
-              @click="resetSeed"
-            >
-              Reset the data
-            </button>
             <p
               v-if="armed"
               class="controls__note"
               role="status"
             >
               Armed — open that screen and it will fail once, then recover.
+              Nothing is sent; the message says the request was stopped here.
+            </p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Session</legend>
+            <p class="controls__note">
+              Signed in as
+              <strong>{{ session.currentDisplayName }}</strong>.
+              The session itself is an <code>httpOnly</code> cookie — view
+              it in the network panel and there is no token to read in any
+              response body.
             </p>
           </fieldset>
         </div>
@@ -294,6 +331,23 @@ function resetSeed(): void {
 }
 
 .shell__nav a:hover {
+  color: var(--primary);
+}
+
+/* The sign-out control sits in the navigation row, so it wears a link's
+   typography while being a button: it does something rather than go
+   somewhere, and a button is what a keyboard and a screen reader expect. */
+.shell__out {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.shell__out:hover {
   color: var(--primary);
 }
 
@@ -386,25 +440,9 @@ function resetSeed(): void {
   padding: 0 1rem;
 }
 
-.controls__secondary {
-  background: var(--surface);
-  border: var(--hairline) solid var(--border);
-}
-
 .controls__note {
   margin: 0.35rem 0 0;
   font-style: italic;
-}
-
-.choice {
-  display: flex;
-  gap: 0.4rem;
-  align-items: baseline;
-  font-weight: 400;
-}
-
-.choice small {
-  color: var(--text-muted);
 }
 
 /* ---- narrow screens: one compact line of brand, one line of links ---- */
