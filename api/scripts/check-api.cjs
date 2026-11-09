@@ -33,12 +33,48 @@ let pass = 0;
 let fail = 0;
 const failures = [];
 
+function safeForLog(value, depth = 0) {
+  if (value === null || value === undefined) return value;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+  if (depth >= 3) return '[Redacted: nested]';
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 10).map((item) => safeForLog(item, depth + 1));
+  }
+
+  if (typeof value === 'object') {
+    const sensitive = new Set([
+      'password',
+      'token',
+      'accessToken',
+      'refreshToken',
+      'authorization',
+      'cookie',
+      'set-cookie',
+      'setCookie',
+      'secret',
+      'session',
+    ]);
+    const out = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (sensitive.has(k) || sensitive.has(String(k).toLowerCase())) {
+        out[k] = '[Redacted]';
+      } else {
+        out[k] = safeForLog(v, depth + 1);
+      }
+    }
+    return out;
+  }
+
+  return String(value);
+}
+
 function check(name, condition, detail) {
   if (condition) {
     pass += 1;
   } else {
     fail += 1;
-    failures.push(`${name}${detail === undefined ? '' : ` → ${JSON.stringify(detail)}`}`);
+    failures.push(`${name}${detail === undefined ? '' : ` → ${JSON.stringify(safeForLog(detail))}`}`);
   }
 }
 
