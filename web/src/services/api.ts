@@ -36,6 +36,34 @@ import type {
 const BASE = '/api';
 
 /**
+ * How long a request may go unanswered before it counts as unreachable.
+ *
+ * `fetch` has no deadline of its own, and the router guard waits on the
+ * first request before any screen is drawn — `session.restore()` asks
+ * `/auth/me` so a refresh on a deep link cannot bounce a signed-in member
+ * through the login form. So a server that accepts the connection and then
+ * never answers — a stopped API behind a proxy, a stalled upstream, a
+ * network that drops the packets — did not produce an error state: it
+ * produced a shell with an empty `<main>`, for as long as the browser was
+ * willing to wait.
+ *
+ * The value is deliberately generous next to this API, which answers in
+ * tens of milliseconds, and deliberately short next to a browser's own
+ * patience (minutes): fifteen seconds of nothing is a server that is not
+ * coming back, and what arrives then is the same `ApiError(0)` a refused
+ * connection already produced — "Could not reach the API" — so a timeout
+ * says the one honest thing about an API that has stopped answering.
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
+
+/**
+ * The same deadline for the one call that is not JSON: a photograph can be
+ * megabytes over a link that may be slow, so it gets a far wider margin.
+ * Unbounded is still wrong — a stalled upload must fail rather than spin.
+ */
+const UPLOAD_TIMEOUT_MS = 120_000;
+
+/**
  * A request that failed, in the only shape a view has to understand.
  *
  * `status` is what a caller branches on — `404` for "gone", `401` for
@@ -115,6 +143,9 @@ async function request<T>(
       credentials: 'same-origin',
       headers: body === undefined ? {} : { 'content-type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
+      /* A request that never answers must arrive as an error below, not as
+         a screen waiting for a promise that will not settle. */
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch {
     throw new ApiError(0, [
@@ -563,6 +594,7 @@ export async function uploadPhoto(file: File): Promise<UploadedPhoto> {
       method: 'POST',
       credentials: 'same-origin',
       body: form,
+      signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
     });
   } catch {
     throw new ApiError(0, ['Could not reach the API. Is it running?']);
