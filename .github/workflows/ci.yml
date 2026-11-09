@@ -31,6 +31,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 # A second push to the same branch cancels the run it made obsolete.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
